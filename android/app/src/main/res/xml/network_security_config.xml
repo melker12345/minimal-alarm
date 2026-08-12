@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allow cleartext HTTP so the app can talk to a Philips Hue bridge on the local
+  network (the Hue v1 API is HTTP on the LAN). Release builds disable cleartext
+  by default, which would break bridge control.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
