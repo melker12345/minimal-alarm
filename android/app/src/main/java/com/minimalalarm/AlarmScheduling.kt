@@ -86,10 +86,12 @@ object AlarmArming {
 
     fun arm(context: Context, id: String, triggerAt: Long, light: LightConfig) {
         val manager = context.getSystemService(AlarmManager::class.java)
-        setExact(manager, triggerAt, mainPending(context, id))
+        setAlarmClock(context, manager, triggerAt, mainPending(context, id))
         val sunrise = sunrisePending(context, id)
         if (light.enabled && light.program == "sunrise" && light.fadeMinutes > 0) {
             val pre = triggerAt - light.fadeMinutes * 60_000L
+            // The pre-alarm is an invisible light fade — exact, but not an
+            // "alarm clock" (no status-bar alarm icon for it).
             if (pre > System.currentTimeMillis()) setExact(manager, pre, sunrise) else manager.cancel(sunrise)
         } else {
             manager.cancel(sunrise)
@@ -100,6 +102,26 @@ object AlarmArming {
         val manager = context.getSystemService(AlarmManager::class.java)
         manager.cancel(mainPending(context, id))
         manager.cancel(sunrisePending(context, id))
+    }
+
+    /**
+     * setAlarmClock is the primitive meant for user-visible alarm clocks: it is
+     * exempt from Doze deferral, shows the alarm icon in the status bar, and
+     * grants the background-start allowance the ringing UI relies on.
+     */
+    private fun setAlarmClock(context: Context, manager: AlarmManager, triggerAt: Long, pending: PendingIntent) {
+        val show = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        try {
+            manager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerAt, show), pending)
+        } catch (_: SecurityException) {
+            // Exact-alarm permission revoked: better an approximate alarm than
+            // none. The permission card in Settings surfaces the degraded state.
+            manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        }
     }
 
     private fun setExact(manager: AlarmManager, triggerAt: Long, pending: PendingIntent) {
