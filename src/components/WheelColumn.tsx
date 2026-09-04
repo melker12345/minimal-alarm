@@ -14,9 +14,9 @@ import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 
 export const ITEM_HEIGHT = 48;
-const VISIBLE = 5; // center + 2 each side
-export const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE;
-const WHEEL_PADDING = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2;
+/** Window height for a wheel showing `rows` values (center + neighbours). */
+export const wheelHeight = (rows: number) => ITEM_HEIGHT * rows;
+export const WHEEL_HEIGHT = wheelHeight(5);
 const REPEAT = 15; // copies of the value range, for seamless wrap
 const BASE = Math.floor(REPEAT / 2);
 
@@ -32,6 +32,8 @@ type Props = {
   onManualCommit: () => void;
   /** Column width; the default suits two columns, narrower fits three. */
   width?: number;
+  /** Visible rows (odd). 5 = roomy picker, 3 = compact form. */
+  rows?: number;
 };
 
 /**
@@ -41,7 +43,7 @@ type Props = {
  * user drifts far, so there is never a visible jump. Tap the centered value to
  * type it directly.
  */
-export function WheelColumn({label, values, selected, onChange, manualActive, manualValue, onManual, onManualChange, onManualCommit, width = 104}: Props) {
+export function WheelColumn({label, values, selected, onChange, manualActive, manualValue, onManual, onManualChange, onManualCommit, width = 104, rows = 5}: Props) {
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   // Animated.FlatList forwards FlatList methods (scrollToOffset) but its ref
@@ -152,7 +154,7 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
   return (
     <View style={styles.column}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.window, {width}]}>
+      <View style={[styles.window, {width, height: wheelHeight(rows)}]}>
         <View pointerEvents="none" style={styles.selection} />
         <Animated.FlatList
           ref={listRef}
@@ -170,7 +172,7 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
           scrollEventThrottle={16}
           onScroll={onScroll}
           onMomentumScrollEnd={settle}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={{paddingVertical: (wheelHeight(rows) - ITEM_HEIGHT) / 2}}
           renderItem={renderItem}
         />
       </View>
@@ -181,9 +183,8 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
 const makeStyles = (c: Colors) => StyleSheet.create({
   column: {alignItems: 'center'},
   label: {fontSize: 10, fontWeight: '700', letterSpacing: 1.6, color: c.muted, marginBottom: 8},
-  window: {height: WHEEL_HEIGHT, width: 104, borderRadius: 22, overflow: 'hidden', backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, justifyContent: 'center'},
+  window: {borderRadius: 22, overflow: 'hidden', backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, justifyContent: 'center'},
   selection: {position: 'absolute', left: 8, right: 8, height: ITEM_HEIGHT, borderRadius: 14, backgroundColor: c.accentSoft},
-  content: {paddingVertical: WHEEL_PADDING},
   item: {height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center'},
   text: {fontSize: 24, color: c.ink, fontWeight: '600'},
   manualInput: {width: 76, height: 44, padding: 0, textAlign: 'center', fontSize: 24, color: c.accent, fontWeight: '700', backgroundColor: 'transparent'},

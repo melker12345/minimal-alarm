@@ -35,7 +35,11 @@ import {Slider} from './Slider';
 import {Tappable} from './Tappable';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
-import {WheelColumn, WHEEL_HEIGHT} from './WheelColumn';
+import {WheelColumn, wheelHeight} from './WheelColumn';
+
+// Compact enough that the whole form — through the save button — fits without
+// scrolling; only the ringtone list and light options grow past one screen.
+const WHEEL_ROWS = 3;
 
 type Props = {
   kind: AlarmKind;
@@ -259,10 +263,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
               <View style={styles.handle} />
             </View>
             <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>{initial ? 'Edit alarm' : alarmKind === 'sequence' ? 'Wake-up group' : 'New alarm'}</Text>
-                <Text style={styles.subtitle}>Set a time that feels right</Text>
-              </View>
+              <Text style={styles.title}>{initial ? 'Edit alarm' : alarmKind === 'sequence' ? 'Wake-up group' : 'New alarm'}</Text>
               <Tappable frame={styles.closeBtn} style={styles.closeBtnInner} onPress={close} accessibilityLabel="Close">
                 <MaterialCommunityIcons name="close" size={24} color={c.ink} />
               </Tappable>
@@ -276,7 +277,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
               overScrollMode="never"
               bounces={false}
               scrollEnabled={!bodyScrollLocked}
-              contentContainerStyle={[styles.scroll, {paddingBottom: 28 + insets.bottom}]}
+              contentContainerStyle={[styles.scroll, {paddingBottom: 16 + insets.bottom}]}
               scrollEventThrottle={16}
               onScroll={onScroll}>
               <SegmentedButtons
@@ -288,10 +289,10 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 ]}
                 style={styles.segmented}
               />
-              <Text style={styles.fieldLabel}>TIME</Text>
               <View ref={wheelsRowRef} onLayout={measureWheels} style={styles.wheels}>
                 <WheelColumn
                   label="HOUR"
+                  rows={WHEEL_ROWS}
                   values={hourValues}
                   selected={hour}
                   onChange={setHour}
@@ -304,6 +305,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 <Text style={styles.colon}>:</Text>
                 <WheelColumn
                   label="MINUTE"
+                  rows={WHEEL_ROWS}
                   values={minuteValues}
                   selected={minute}
                   onChange={setMinute}
@@ -456,21 +458,20 @@ const makeStyles = (c: Colors) =>
     scroll: {},
     dragArea: {height: 40, alignItems: 'center', justifyContent: 'center'},
     handle: {width: 42, height: 5, borderRadius: 3, backgroundColor: c.line},
-    header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20},
+    header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14},
     title: {fontSize: 26, fontWeight: '700', letterSpacing: -0.6, color: c.ink},
-    subtitle: {fontSize: 14, color: c.muted, marginTop: 4},
     closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface},
     closeBtnInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-    segmented: {marginBottom: 24},
+    segmented: {marginBottom: 16},
     fieldLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginBottom: 10},
     fieldLabelInline: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted},
-    wheels: {flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, marginTop: 12},
-    colon: {fontSize: 30, fontWeight: '300', color: c.disabled, height: WHEEL_HEIGHT, lineHeight: WHEEL_HEIGHT, textAlign: 'center', marginHorizontal: 2},
-    divider: {marginVertical: 22, backgroundColor: c.line},
+    wheels: {flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, marginTop: 2},
+    colon: {fontSize: 30, fontWeight: '300', color: c.disabled, height: wheelHeight(WHEEL_ROWS), lineHeight: wheelHeight(WHEEL_ROWS), textAlign: 'center', marginHorizontal: 2},
+    divider: {marginVertical: 16, backgroundColor: c.line},
     repeatRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12},
     allBtn: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.accentSoft},
     allBtnText: {fontSize: 12, fontWeight: '700', color: c.accent},
-    daysRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22},
+    daysRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16},
     day: {width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
     dayInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     dayActive: {backgroundColor: c.accent, borderColor: c.accent},
