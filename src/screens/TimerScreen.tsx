@@ -5,7 +5,7 @@ import {Colors, spacing} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 import {ProgressRing} from '../components/ProgressRing';
 import {Tappable} from '../components/Tappable';
-import {WheelColumn} from '../components/WheelColumn';
+import {WheelColumn, WHEEL_HEIGHT} from '../components/WheelColumn';
 import {TimerController} from '../state/useTimer';
 
 const RING_SIZE = 264;
@@ -139,7 +139,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   title: {fontSize: 40, lineHeight: 46, fontWeight: '700', letterSpacing: -1.5, color: c.ink, marginTop: 2},
   subtitle: {fontSize: 15, color: c.muted, marginTop: 5},
   wheels: {flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 6, marginTop: 26},
-  colon: {fontSize: 26, fontWeight: '300', color: c.disabled, height: 240, lineHeight: 240, textAlign: 'center'},
+  colon: {fontSize: 26, fontWeight: '300', color: c.disabled, height: WHEEL_HEIGHT, lineHeight: WHEEL_HEIGHT, textAlign: 'center'},
   quickLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginTop: 26},
   presets: {flexDirection: 'row', gap: 9, marginTop: 10},
   preset: {flex: 1, height: 42, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},

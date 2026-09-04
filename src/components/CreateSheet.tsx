@@ -35,11 +35,7 @@ import {Slider} from './Slider';
 import {Tappable} from './Tappable';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
-import {WheelColumn, wheelHeight} from './WheelColumn';
-
-// Compact enough that the whole form — through the save button — fits without
-// scrolling; only the ringtone list and light options grow past one screen.
-const WHEEL_ROWS = 3;
+import {WheelColumn, WHEEL_HEIGHT} from './WheelColumn';
 
 type Props = {
   kind: AlarmKind;
@@ -292,7 +288,6 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
               <View ref={wheelsRowRef} onLayout={measureWheels} style={styles.wheels}>
                 <WheelColumn
                   label="HOUR"
-                  rows={WHEEL_ROWS}
                   values={hourValues}
                   selected={hour}
                   onChange={setHour}
@@ -305,7 +300,6 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 <Text style={styles.colon}>:</Text>
                 <WheelColumn
                   label="MINUTE"
-                  rows={WHEEL_ROWS}
                   values={minuteValues}
                   selected={minute}
                   onChange={setMinute}
@@ -466,7 +460,7 @@ const makeStyles = (c: Colors) =>
     fieldLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginBottom: 10},
     fieldLabelInline: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted},
     wheels: {flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, marginTop: 2},
-    colon: {fontSize: 30, fontWeight: '300', color: c.disabled, height: wheelHeight(WHEEL_ROWS), lineHeight: wheelHeight(WHEEL_ROWS), textAlign: 'center', marginHorizontal: 2},
+    colon: {fontSize: 30, fontWeight: '300', color: c.disabled, height: WHEEL_HEIGHT, lineHeight: WHEEL_HEIGHT, textAlign: 'center', marginHorizontal: 2},
     divider: {marginVertical: 16, backgroundColor: c.line},
     repeatRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12},
     allBtn: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.accentSoft},

@@ -14,9 +14,9 @@ import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 
 export const ITEM_HEIGHT = 48;
-/** Window height for a wheel showing `rows` values (center + neighbours). */
-export const wheelHeight = (rows: number) => ITEM_HEIGHT * rows;
-export const WHEEL_HEIGHT = wheelHeight(5);
+/** One wheel size everywhere: center value + one neighbour each side. */
+export const WHEEL_ROWS = 3;
+export const WHEEL_HEIGHT = ITEM_HEIGHT * WHEEL_ROWS;
 const REPEAT = 15; // copies of the value range, for seamless wrap
 const BASE = Math.floor(REPEAT / 2);
 
@@ -32,8 +32,6 @@ type Props = {
   onManualCommit: () => void;
   /** Column width; the default suits two columns, narrower fits three. */
   width?: number;
-  /** Visible rows (odd). 5 = roomy picker, 3 = compact form. */
-  rows?: number;
 };
 
 /**
@@ -43,7 +41,7 @@ type Props = {
  * user drifts far, so there is never a visible jump. Tap the centered value to
  * type it directly.
  */
-export function WheelColumn({label, values, selected, onChange, manualActive, manualValue, onManual, onManualChange, onManualCommit, width = 104, rows = 5}: Props) {
+export function WheelColumn({label, values, selected, onChange, manualActive, manualValue, onManual, onManualChange, onManualCommit, width = 104}: Props) {
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   // Animated.FlatList forwards FlatList methods (scrollToOffset) but its ref
@@ -154,7 +152,7 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
   return (
     <View style={styles.column}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.window, {width, height: wheelHeight(rows)}]}>
+      <View style={[styles.window, {width, height: WHEEL_HEIGHT}]}>
         <View pointerEvents="none" style={styles.selection} />
         <Animated.FlatList
           ref={listRef}
@@ -172,7 +170,7 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
           scrollEventThrottle={16}
           onScroll={onScroll}
           onMomentumScrollEnd={settle}
-          contentContainerStyle={{paddingVertical: (wheelHeight(rows) - ITEM_HEIGHT) / 2}}
+          contentContainerStyle={{paddingVertical: (WHEEL_HEIGHT - ITEM_HEIGHT) / 2}}
           renderItem={renderItem}
         />
       </View>
