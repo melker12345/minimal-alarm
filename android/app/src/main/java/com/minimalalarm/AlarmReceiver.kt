@@ -31,7 +31,10 @@ class AlarmReceiver : BroadcastReceiver() {
             context.getSharedPreferences(AlarmSchedulerModule.PREFS, Context.MODE_PRIVATE).edit().remove(id).apply()
             AlarmArming.cancel(context, id)
         } else {
-            AlarmArming.arm(context, id, AlarmTiming.next(record.hour, record.minute, record.days), record.light)
+            val trigger = AlarmTiming.next(record.hour, record.minute, record.days)
+            context.getSharedPreferences(AlarmSchedulerModule.PREFS, Context.MODE_PRIVATE).edit()
+                .putString(id, record.copy(armedFor = trigger).serialize()).apply()
+            AlarmArming.arm(context, id, trigger, record.light)
         }
 
         // Light program.
@@ -70,18 +73,16 @@ class BootReceiver : BroadcastReceiver() {
         val prefs = context.getSharedPreferences(AlarmSchedulerModule.PREFS, Context.MODE_PRIVATE)
         prefs.all.forEach { (id, stored) ->
             val record = AlarmRecord.parse(stored as? String) ?: return@forEach
-            val trigger = if (record.days.isEmpty()) {
-                val candidate = java.util.Calendar.getInstance().apply {
-                    set(java.util.Calendar.HOUR_OF_DAY, record.hour)
-                    set(java.util.Calendar.MINUTE, record.minute)
-                    set(java.util.Calendar.SECOND, 0)
-                    set(java.util.Calendar.MILLISECOND, 0)
-                }
-                if (candidate.timeInMillis <= System.currentTimeMillis()) return@forEach
-                candidate.timeInMillis
-            } else {
-                AlarmTiming.next(record.hour, record.minute, record.days)
+            // A one-shot record only exists while pending (it's removed at ring
+            // time), so if its armed moment passed while the phone was off it
+            // was missed — clean it up instead of ringing a day late.
+            if (record.days.isEmpty() && record.armedFor in 1 until System.currentTimeMillis()) {
+                AlarmArming.cancel(context, id)
+                prefs.edit().remove(id).apply()
+                return@forEach
             }
+            val trigger = AlarmTiming.next(record.hour, record.minute, record.days)
+            prefs.edit().putString(id, record.copy(armedFor = trigger).serialize()).apply()
             AlarmArming.arm(context, id, trigger, record.light)
         }
     }

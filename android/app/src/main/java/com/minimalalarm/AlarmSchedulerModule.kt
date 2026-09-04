@@ -153,9 +153,10 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
     }
 
     private fun scheduleOne(id: String, hour: Int, minute: Int, days: Set<Int>, ringtone: String, label: String, light: LightConfig) {
-        val record = AlarmRecord(hour, minute, days, ringtone, label, light)
+        val trigger = AlarmTiming.next(hour, minute, days)
+        val record = AlarmRecord(hour, minute, days, ringtone, label, light, trigger)
         reactContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(id, record.serialize()).apply()
-        AlarmArming.arm(reactContext, id, AlarmTiming.next(hour, minute, days), light)
+        AlarmArming.arm(reactContext, id, trigger, light)
     }
 
     companion object {

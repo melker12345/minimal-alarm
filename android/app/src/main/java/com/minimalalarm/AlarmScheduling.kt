@@ -32,11 +32,15 @@ data class AlarmRecord(
     val ringtone: String,
     val label: String,
     val light: LightConfig,
+    // Epoch millis this occurrence is armed for; lets boot recovery tell a
+    // still-pending one-shot (e.g. set before midnight for tomorrow) from one
+    // that was missed while the phone was off. 0 = unknown (legacy record).
+    val armedFor: Long = 0,
 ) {
     fun serialize(): String = listOf(
         hour, minute, days.joinToString(","), ringtone, label.replace("~", " "),
         light.enabled, light.program, light.fadeMinutes, light.startWarmth,
-        light.endWarmth, light.coolShiftMinutes, light.brightness,
+        light.endWarmth, light.coolShiftMinutes, light.brightness, armedFor,
     ).joinToString("~")
 
     companion object {
@@ -56,7 +60,8 @@ data class AlarmRecord(
                 coolShiftMinutes = v.getOrNull(10)?.toIntOrNull() ?: 0,
                 brightness = v.getOrNull(11)?.toIntOrNull() ?: 100,
             )
-            return AlarmRecord(hour, minute, days, ringtone, label, light)
+            val armedFor = v.getOrNull(12)?.toLongOrNull() ?: 0L
+            return AlarmRecord(hour, minute, days, ringtone, label, light, armedFor)
         }
     }
 }
