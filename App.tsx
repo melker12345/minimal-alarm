@@ -158,5 +158,5 @@ const makeStyles = (c: Colors) =>
     page: {flex: 1, backgroundColor: c.canvas},
     // Sits above the bottom nav pill so it's never covered.
     fab: {position: 'absolute', right: 22, backgroundColor: c.accent, borderRadius: 18},
-    snack: {borderRadius: 14, marginHorizontal: 22},
+    snack: {borderRadius: 14, marginHorizontal: 22, borderWidth: 1, borderColor: c.line},
   });

@@ -81,6 +81,11 @@ export function paperThemeFor(scheme: Scheme) {
       onSurface: c.ink,
       onSurfaceVariant: c.muted,
       outline: c.line,
+      // Snackbars use the inverse tokens; keep them on-theme instead of
+      // Material's default bright-in-dark pill.
+      inverseSurface: c.surface,
+      inverseOnSurface: c.ink,
+      inversePrimary: c.accent,
       elevation: {
         ...base.colors.elevation,
         level1: c.surface,
