@@ -4,6 +4,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {Button, Divider, Modal, Text} from 'react-native-paper';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
+import {appVersion} from '../native/alarmScheduler';
 
 type Props = {
   exactAllowed: boolean;
@@ -122,6 +123,7 @@ export function SettingsModal({exactAllowed, fullScreenAllowed, overlayAllowed, 
           trailing={<MaterialCommunityIcons name="chevron-right" size={24} color={c.muted} />}
         />
       </Pressable>
+      <Text style={styles.version}>Minimal Alarm {appVersion}</Text>
     </Modal>
   );
 }
@@ -146,4 +148,5 @@ const makeStyles = (c: Colors) =>
     statusOk: {backgroundColor: c.accentSoft},
     statusWarn: {backgroundColor: c.coralSoft},
     statusText: {fontSize: 13, fontWeight: '600', flex: 1},
+    version: {fontSize: 12, color: c.disabled, textAlign: 'center', marginTop: 14},
   });
