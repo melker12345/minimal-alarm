@@ -12,7 +12,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import {Gesture, GestureDetector, GestureHandlerRootView} from 'react-native-gesture-handler';
+import {Gesture, GestureDetector, GestureHandlerRootView, State} from 'react-native-gesture-handler';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Button, Divider, SegmentedButtons, Switch, Text, TextInput} from 'react-native-paper';
@@ -130,6 +130,13 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   // showing the overscroll stretch instead of dragging the sheet).
   const startPoint = useRef({x: 0, y: 0});
   const dragBase = useRef(0);
+  // A released (or interrupted) drag that didn't dismiss settles home.
+  const settleBack = useCallback(() => {
+    Animated.parallel([
+      Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 4, speed: 16}),
+      Animated.timing(backdrop, {toValue: 1, duration: 140, useNativeDriver: true}),
+    ]).start();
+  }, [translateY, backdrop]);
   const scrollGesture = useMemo(() => Gesture.Native(), []);
   const panGesture = useMemo(
     () =>
@@ -141,6 +148,9 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
           startPoint.current = {x: touch.absoluteX, y: touch.absoluteY};
         })
         .onTouchesMove((event, state) => {
+          // Once active the sheet just tracks the finger — up and down alike —
+          // so a drag can be taken back midway. Judge only before activation.
+          if (event.state === State.ACTIVE) return;
           const touch = event.allTouches[0];
           const dx = touch.absoluteX - startPoint.current.x;
           const dy = touch.absoluteY - startPoint.current.y;
@@ -158,17 +168,21 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
           dragBase.current = event.translationY;
         })
         .onUpdate(event => {
-          translateY.setValue(Math.max(0, event.translationY - dragBase.current));
+          const offset = Math.max(0, event.translationY - dragBase.current);
+          translateY.setValue(offset);
+          backdrop.setValue(Math.max(0.3, 1 - offset / 600));
         })
         .onEnd(event => {
           const dragged = event.translationY - dragBase.current;
-          if (dragged > 120 || event.velocityY > 1000) close();
-          else Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start();
+          const flungDown = event.velocityY > 900;
+          const pulledBackUp = event.velocityY < -300;
+          if (!pulledBackUp && (dragged > 140 || flungDown)) close();
+          else settleBack();
         })
         .onFinalize(() => {
-          if (!closing.current) Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start();
+          if (!closing.current) settleBack();
         }),
-    [close, scrollGesture, translateY],
+    [close, scrollGesture, settleBack, translateY, backdrop],
   );
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
