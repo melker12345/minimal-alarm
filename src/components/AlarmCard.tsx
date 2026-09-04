@@ -2,7 +2,7 @@ import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Surface, Switch, Text} from 'react-native-paper';
-import {Alarm, daysText, ringtoneLabel, sequenceTimes, timeText} from '../domain/alarm';
+import {Alarm, daysText, ringtoneLabel, sequenceTimes, shiftDays, timeText} from '../domain/alarm';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 
@@ -65,7 +65,7 @@ export function AlarmCard({alarm, expanded, onPress, onToggle, onDelete, onEdit}
             <View key={`${alarm.id}-${index}`} style={styles.sequenceRow}>
               <Text style={styles.sequenceIndex}>{String(index + 1).padStart(2, '0')}</Text>
               <Text style={styles.sequenceTime}>{timeText(time)}</Text>
-              <Text style={styles.sequenceDay}>{daysText(alarm.days)}</Text>
+              <Text style={styles.sequenceDay}>{daysText(shiftDays(alarm.days, time.dayShift))}</Text>
             </View>
           ))}
         </View>

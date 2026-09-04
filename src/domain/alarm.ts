@@ -86,9 +86,17 @@ export function daysText(days: number[]) {
   return sorted.map(day => dayLabels[day - 1]).join('  ');
 }
 
+/** Shift repeat days by whole days (negative = earlier), wrapping Mon(1)–Sun(7). */
+export function shiftDays(days: number[], shift: number) {
+  return days.map(day => ((((day - 1 + shift) % 7) + 7) % 7) + 1).sort((a, b) => a - b);
+}
+
 export function sequenceTimes(alarm: Pick<Alarm, 'hour' | 'minute' | 'count' | 'spacingMinutes'>) {
   return Array.from({length: alarm.count}, (_, index) => {
-    const total = (alarm.hour * 60 + alarm.minute - index * alarm.spacingMinutes + 7 * 24 * 60) % (24 * 60);
-    return {hour: Math.floor(total / 60), minute: total % 60};
+    const raw = alarm.hour * 60 + alarm.minute - index * alarm.spacingMinutes;
+    const total = ((raw % (24 * 60)) + 24 * 60) % (24 * 60);
+    // Crossing midnight moves the occurrence to the previous day(s).
+    const dayShift = Math.floor(raw / (24 * 60));
+    return {hour: Math.floor(total / 60), minute: total % 60, dayShift};
   });
 }

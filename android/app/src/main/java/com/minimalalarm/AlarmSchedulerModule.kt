@@ -33,7 +33,7 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
             val hour = alarm.getInt("hour")
             val minute = alarm.getInt("minute")
             val days = alarm.getArray("days")?.toArrayList()?.map { (it as Number).toInt() }?.toSet() ?: emptySet()
-            val count = if (alarm.hasKey("count")) alarm.getInt("count").coerceIn(1, 12) else 1
+            val count = if (alarm.hasKey("count")) alarm.getInt("count").coerceIn(1, MAX_SEQUENCE) else 1
             val spacing = if (alarm.hasKey("spacingMinutes")) alarm.getInt("spacingMinutes").coerceAtLeast(0) else 0
             val ringtone = if (alarm.hasKey("ringtone")) alarm.getString("ringtone") ?: "default" else "default"
             val label = if (alarm.hasKey("label")) alarm.getString("label")?.takeIf { it.isNotBlank() } ?: "Wake up" else "Wake up"
@@ -47,9 +47,32 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
                 coolShiftMinutes = intOr("coolShiftMinutes", 0),
                 brightness = intOr("brightness", 100),
             )
+            // Shrinking a sequence must not leave old indices armed.
+            val stale = reactContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            (count until MAX_SEQUENCE).forEach { index ->
+                AlarmArming.cancel(reactContext, "$id:$index")
+                stale.remove("$id:$index")
+            }
+            stale.apply()
+
+            val mainTrigger = if (days.isEmpty()) AlarmTiming.next(hour, minute, days) else 0L
             repeat(count) { index ->
-                val totalMinutes = (hour * 60 + minute - index * spacing + 7 * 24 * 60) % (24 * 60)
-                scheduleOne("$id:$index", totalMinutes / 60, totalMinutes % 60, days, ringtone, label, light)
+                val raw = hour * 60 + minute - index * spacing
+                val totalMinutes = Math.floorMod(raw, 24 * 60)
+                // Subtracting spacing can cross midnight: the occurrence then
+                // belongs to the previous day(s), so repeat days shift with it.
+                val dayShift = Math.floorDiv(raw, 24 * 60)
+                if (days.isEmpty()) {
+                    // One-shot: derive from the main occurrence so pre-alarms
+                    // always land before it; skip any already in the past.
+                    val trigger = mainTrigger - index * spacing * 60_000L
+                    if (trigger > System.currentTimeMillis()) {
+                        scheduleOne("$id:$index", totalMinutes / 60, totalMinutes % 60, days, ringtone, label, light, trigger)
+                    }
+                } else {
+                    val shifted = days.map { Math.floorMod(it - 1 + dayShift, 7) + 1 }.toSet()
+                    scheduleOne("$id:$index", totalMinutes / 60, totalMinutes % 60, shifted, ringtone, label, light)
+                }
             }
         }.onSuccess { promise.resolve(null) }.onFailure { promise.reject("SCHEDULE_FAILED", it) }
     }
@@ -58,7 +81,7 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
     fun cancel(id: String, promise: Promise) {
         val prefs = reactContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val editor = prefs.edit()
-        (0 until 12).forEach { index ->
+        (0 until MAX_SEQUENCE).forEach { index ->
             AlarmArming.cancel(reactContext, "$id:$index")
             editor.remove("$id:$index")
         }
@@ -152,8 +175,8 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
         previewHandler.post { preview?.stop(); promise.resolve(null) }
     }
 
-    private fun scheduleOne(id: String, hour: Int, minute: Int, days: Set<Int>, ringtone: String, label: String, light: LightConfig) {
-        val trigger = AlarmTiming.next(hour, minute, days)
+    private fun scheduleOne(id: String, hour: Int, minute: Int, days: Set<Int>, ringtone: String, label: String, light: LightConfig, triggerAt: Long = 0L) {
+        val trigger = if (triggerAt > 0) triggerAt else AlarmTiming.next(hour, minute, days)
         val record = AlarmRecord(hour, minute, days, ringtone, label, light, trigger)
         reactContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(id, record.serialize()).apply()
         AlarmArming.arm(reactContext, id, trigger, light)
@@ -162,6 +185,7 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
     companion object {
         const val PREFS = "native_alarm_schedules"
         const val HUE_PREFS = "hue_config"
+        const val MAX_SEQUENCE = 12
     }
 }
 
