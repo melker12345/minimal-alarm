@@ -67,6 +67,7 @@ class AlarmRingingService : Service() {
             strobeBrightness = intent.getIntExtra("brightness", 100)
             startStrobe()
         }
+        releaseWakeLock() // sound is playing; the receiver's bridge lock is done
         return START_NOT_STICKY
     }
 
@@ -165,6 +166,7 @@ class AlarmRingingService : Service() {
         handler.removeCallbacks(shortStop)
         stopStrobe()
         ringtone?.stop()
+        releaseWakeLock()
         super.onDestroy()
     }
 
@@ -173,6 +175,24 @@ class AlarmRingingService : Service() {
     companion object {
         const val ACTION_STOP = "com.minimalalarm.STOP_ALARM"
         const val CHANNEL_ID = "minimal_alarm_ringing_v3"
+
+        // Bridges the gap between AlarmReceiver returning (which releases
+        // AlarmManager's own wakelock) and this service actually playing audio;
+        // without it the device can re-suspend before the alarm makes a sound.
+        private var startupLock: android.os.PowerManager.WakeLock? = null
+
+        fun holdWakeLock(context: android.content.Context) {
+            releaseWakeLock()
+            startupLock = context.getSystemService(android.os.PowerManager::class.java)
+                .newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "minimalalarm:ring-start")
+                .apply { acquire(60_000L) }
+        }
+
+        fun releaseWakeLock() {
+            startupLock?.let { if (it.isHeld) it.release() }
+            startupLock = null
+        }
+
         fun stop(context: android.content.Context, id: String) {
             context.startService(Intent(context, AlarmRingingService::class.java).setAction(ACTION_STOP).putExtra(AlarmReceiver.EXTRA_ALARM_ID, id))
         }

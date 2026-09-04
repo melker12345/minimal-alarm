@@ -56,6 +56,9 @@ class AlarmReceiver : BroadcastReceiver() {
             .putExtra("alarm_label", record.label)
             .putExtra("party", light.enabled && light.program == "party")
             .putExtra("brightness", light.brightness)
+        // Keep the CPU awake until the service is up and playing; AlarmManager's
+        // own wakelock is released the moment onReceive returns.
+        AlarmRingingService.holdWakeLock(context)
         if (android.os.Build.VERSION.SDK_INT >= 26) ContextCompat.startForegroundService(context, serviceIntent) else context.startService(serviceIntent)
 
         runCatching { context.startActivity(RingingActivity.intentFor(context, id, record.ringtone, record.hour, record.minute, record.label)) }
