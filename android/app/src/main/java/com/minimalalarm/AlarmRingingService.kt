@@ -68,7 +68,8 @@ class AlarmRingingService : Service() {
             startStrobe()
         }
         releaseWakeLock() // sound is playing; the receiver's bridge lock is done
-        return START_NOT_STICKY
+        // If the OS kills us mid-ring, come back ringing rather than going silent.
+        return START_REDELIVER_INTENT
     }
 
     private fun startStrobe() {
@@ -147,7 +148,8 @@ class AlarmRingingService : Service() {
         if (profile == "short") handler.postDelayed(shortStop, 8_000)
     }
 
-    private fun stopRinging() {
+    /** Everything that must happen when ringing ends, however it ends. */
+    private fun cleanup() {
         handler.removeCallbacks(ramp)
         handler.removeCallbacks(shortStop)
         stopStrobe()
@@ -156,17 +158,20 @@ class AlarmRingingService : Service() {
         // Put any Hue lights this alarm turned on back to their previous state.
         HueController.restore(this)
         RingingActivity.dismiss()
-        stopForeground(STOP_FOREGROUND_REMOVE)
         if (notificationId != 0) getSystemService(NotificationManager::class.java).cancel(notificationId)
+        releaseWakeLock()
+    }
+
+    private fun stopRinging() {
+        cleanup()
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(ramp)
-        handler.removeCallbacks(shortStop)
-        stopStrobe()
-        ringtone?.stop()
-        releaseWakeLock()
+        // Also runs when the OS kills the service: without this the lights stay
+        // in alarm state and the notification lingers.
+        cleanup()
         super.onDestroy()
     }
 

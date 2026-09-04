@@ -112,9 +112,14 @@ object HueController {
         Thread {
             runCatching {
                 val snap = JSONObject(snapshot)
-                snap.keys().forEach { id -> runCatching { putState(c, id, restoreBody(snap.getJSONObject(id))) } }
+                var anyRestored = false
+                snap.keys().forEach { id ->
+                    runCatching { putState(c, id, restoreBody(snap.getJSONObject(id))) }.onSuccess { anyRestored = true }
+                }
+                // Keep the snapshot if the bridge was unreachable so a later
+                // dismiss (or the next alarm's restore) can still put it back.
+                if (anyRestored) prefs.edit().remove(SNAPSHOT_KEY).apply()
             }
-            prefs.edit().remove(SNAPSHOT_KEY).apply()
         }.start()
     }
 
