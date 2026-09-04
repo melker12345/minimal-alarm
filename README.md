@@ -13,8 +13,9 @@ works even when the JS runtime is not alive.
 - A calm countdown Timer tab
 - Local persistence through AsyncStorage
 - Native scheduling for exact alarms + reboot / clock-change recovery
-- **Auto-presenting full-screen ringing screen** (over lock screen and home),
-  with **Snooze (9 min)** and an attractive Stop button
+- **Auto-presenting full-screen ringing screen** (over lock screen and home)
+  with an attractive Stop button (no snooze yet — sequences cover repeated
+  wake-ups)
 - Guided permission onboarding (notifications, exact-alarm, full-screen-intent)
 
 ## Architecture
