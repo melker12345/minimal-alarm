@@ -1,13 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState, Vibration} from 'react-native';
 import {timerScheduler} from '../native/alarmScheduler';
 
 export type TimerPhase = 'idle' | 'running' | 'paused' | 'finished';
 
 const STORAGE_KEY = '@minimal-alarm/timer';
+const USAGE_KEY = '@minimal-alarm/timer-usage';
 
 type Stored = {phase: TimerPhase; durationSec: number; remaining: number; endsAt: number | null};
+type Usage = Record<string, {c: number; t: number}>; // seconds → {count, last-used}
+
+const DEFAULT_PRESETS = [5 * 60, 10 * 60, 15 * 60];
+const PRESET_SLOTS = 3;
+const MIN_USES = 2; // a duration must recur before it earns a preset slot
 
 /**
  * Countdown timer whose truth is a target end-timestamp, mirrored into a
@@ -18,6 +24,7 @@ export function useTimer() {
   const [durationSec, setDurationSec] = useState(10 * 60);
   const [remaining, setRemaining] = useState(10 * 60);
   const [phase, setPhase] = useState<TimerPhase>('idle');
+  const [usage, setUsage] = useState<Usage>({});
   const endsAt = useRef<number | null>(null);
   const hydrated = useRef(false);
 
@@ -61,7 +68,42 @@ export function useTimer() {
       .finally(() => {
         hydrated.current = true;
       });
+    AsyncStorage.getItem(USAGE_KEY)
+      .then(value => {
+        if (value) setUsage(JSON.parse(value) as Usage);
+      })
+      .catch(() => {});
   }, []);
+
+  /** Learn which durations recur; they become the quick-start presets. */
+  const recordUse = useCallback((seconds: number) => {
+    setUsage(previous => {
+      const entry = previous[seconds] ?? {c: 0, t: 0};
+      const next: Usage = {...previous, [seconds]: {c: entry.c + 1, t: Date.now()}};
+      // Keep the store tiny: only the dozen strongest habits matter.
+      const kept = Object.entries(next)
+        .sort(([, a], [, b]) => b.c - a.c || b.t - a.t)
+        .slice(0, 12);
+      const pruned = Object.fromEntries(kept);
+      AsyncStorage.setItem(USAGE_KEY, JSON.stringify(pruned)).catch(() => {});
+      return pruned;
+    });
+  }, []);
+
+  /** The user's most-used durations, backfilled with the defaults. */
+  const presets = useMemo(() => {
+    const learned = Object.entries(usage)
+      .filter(([, entry]) => entry.c >= MIN_USES)
+      .sort(([, a], [, b]) => b.c - a.c || b.t - a.t)
+      .map(([seconds]) => Number(seconds))
+      .slice(0, PRESET_SLOTS);
+    const filled = [...learned];
+    for (const fallback of DEFAULT_PRESETS) {
+      if (filled.length >= PRESET_SLOTS) break;
+      if (!filled.includes(fallback)) filled.push(fallback);
+    }
+    return filled;
+  }, [usage]);
 
   useEffect(() => {
     if (phase !== 'running') return undefined;
@@ -83,17 +125,27 @@ export function useTimer() {
     setRemaining(totalSec);
   }, []);
 
-  const start = useCallback(() => {
-    const seconds = remaining > 0 ? remaining : durationSec;
-    if (seconds <= 0) return;
-    Vibration.vibrate(10);
-    const target = Date.now() + seconds * 1000;
-    endsAt.current = target;
-    setRemaining(seconds);
-    setPhase('running');
-    timerScheduler.schedule(target);
-    persist({phase: 'running', durationSec, remaining: seconds, endsAt: target});
-  }, [remaining, durationSec, persist]);
+  /** Start (or resume). `overrideSec` starts fresh at that duration — the one-tap presets. */
+  const start = useCallback(
+    (overrideSec?: number) => {
+      const duration = overrideSec ?? durationSec;
+      const seconds = overrideSec ?? (remaining > 0 ? remaining : durationSec);
+      if (seconds <= 0) return;
+      Vibration.vibrate(10);
+      if (overrideSec != null) {
+        setDurationSec(overrideSec);
+      }
+      // Only fresh starts teach the presets — resuming a pause is not a new habit.
+      if (phase === 'idle' || overrideSec != null) recordUse(duration);
+      const target = Date.now() + seconds * 1000;
+      endsAt.current = target;
+      setRemaining(seconds);
+      setPhase('running');
+      timerScheduler.schedule(target);
+      persist({phase: 'running', durationSec: duration, remaining: seconds, endsAt: target});
+    },
+    [remaining, durationSec, phase, recordUse, persist],
+  );
 
   const pause = useCallback(() => {
     Vibration.vibrate(10);
@@ -126,7 +178,7 @@ export function useTimer() {
     }
   }, [durationSec, remaining, persist]);
 
-  return {durationSec, remaining, phase, endsAt: endsAt.current, setDuration, start, pause, reset, addMinute};
+  return {durationSec, remaining, phase, endsAt: endsAt.current, presets, setDuration, start, pause, reset, addMinute};
 }
 
 export type TimerController = ReturnType<typeof useTimer>;
