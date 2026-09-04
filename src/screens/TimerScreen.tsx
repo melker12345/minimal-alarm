@@ -1,6 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Animated, Easing, ScrollView, StyleSheet, View} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Button, Text} from 'react-native-paper';
 import {Colors, spacing} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
@@ -85,7 +84,6 @@ export function TimerScreen({timer}: {timer: TimerController}) {
         <View style={styles.presets}>
           {presets.map(preset => (
             <Tappable key={preset} onPress={() => start(preset)} frame={styles.preset} style={styles.presetInner}>
-              <MaterialCommunityIcons name="play" size={14} color={c.accent} />
               <Text style={styles.presetText}>{presetLabel(preset)}</Text>
             </Tappable>
           ))}
@@ -145,7 +143,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   quickLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginTop: 26},
   presets: {flexDirection: 'row', gap: 9, marginTop: 10},
   preset: {flex: 1, height: 42, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
-  presetInner: {flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6},
+  presetInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
   presetText: {fontSize: 13, color: c.ink, fontWeight: '600', includeFontPadding: false},
   button: {borderRadius: 16, marginTop: 24},
   buttonContent: {height: 54},

@@ -90,19 +90,22 @@ export function useTimer() {
     });
   }, []);
 
-  /** The user's most-used durations, backfilled with the defaults. */
+  /**
+   * The user's most-used durations, replacing defaults from the RIGHT so the
+   * familiar 5/10/15 keep their positions: one learned 7-min habit reads
+   * 5 · 10 · 7, with the strongest habit rightmost.
+   */
   const presets = useMemo(() => {
     const learned = Object.entries(usage)
       .filter(([, entry]) => entry.c >= MIN_USES)
       .sort(([, a], [, b]) => b.c - a.c || b.t - a.t)
       .map(([seconds]) => Number(seconds))
       .slice(0, PRESET_SLOTS);
-    const filled = [...learned];
-    for (const fallback of DEFAULT_PRESETS) {
-      if (filled.length >= PRESET_SLOTS) break;
-      if (!filled.includes(fallback)) filled.push(fallback);
-    }
-    return filled;
+    const keptDefaults = DEFAULT_PRESETS.filter(fallback => !learned.includes(fallback)).slice(
+      0,
+      PRESET_SLOTS - learned.length,
+    );
+    return [...keptDefaults, ...[...learned].reverse()];
   }, [usage]);
 
   useEffect(() => {
