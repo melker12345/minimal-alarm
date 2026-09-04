@@ -83,14 +83,27 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   const hourValues = useMemo(() => Array.from({length: 24}, (_, index) => index + 1), []);
   const minuteValues = useMemo(() => Array.from({length: 60}, (_, index) => index), []);
 
+  // The time wheels scroll their own content; a downward drag starting on them
+  // must spin the wheel, never close the sheet. Their on-screen band is
+  // measured once the sheet has settled so the close gesture can skip it.
+  const wheelsRowRef = useRef<View>(null);
+  const wheelBand = useRef<{top: number; bottom: number} | null>(null);
+  const measureWheels = useCallback(() => {
+    requestAnimationFrame(() =>
+      wheelsRowRef.current?.measureInWindow((_x, y, _w, h) => {
+        if (h > 0) wheelBand.current = {top: y, bottom: y + h};
+      }),
+    );
+  }, []);
+
   // Slide up on mount; the controlled animation (not Modal's own) avoids the
   // stray shadow that used to trail the sheet on the way out.
   useEffect(() => {
     Animated.parallel([
       Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2, speed: 14}),
       Animated.timing(backdrop, {toValue: 1, duration: 180, useNativeDriver: true}),
-    ]).start();
-  }, [translateY, backdrop]);
+    ]).start(() => measureWheels());
+  }, [translateY, backdrop, measureWheels]);
 
   const stopPreview = useCallback(() => {
     if (previewTimer.current) clearTimeout(previewTimer.current);
@@ -114,6 +127,14 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => false,
+        // Capture phase: without this the ScrollView keeps the drag on Android
+        // and pulling down at the top does nothing. Wheel drags are exempt.
+        onMoveShouldSetPanResponderCapture: (_, gesture) => {
+          if (scrollOffset.current > 0) return false;
+          if (gesture.dy <= 8 || gesture.dy <= Math.abs(gesture.dx) * 1.6) return false;
+          const band = wheelBand.current;
+          return !(band && gesture.y0 >= band.top && gesture.y0 <= band.bottom);
+        },
         onMoveShouldSetPanResponder: (_, gesture) =>
           scrollOffset.current <= 0 && gesture.dy > 8 && gesture.dy > Math.abs(gesture.dx) * 1.6,
         onPanResponderMove: (_, gesture) => {
@@ -235,7 +256,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 style={styles.segmented}
               />
               <Text style={styles.fieldLabel}>TIME</Text>
-              <View style={styles.wheels}>
+              <View ref={wheelsRowRef} onLayout={measureWheels} style={styles.wheels}>
                 <WheelColumn
                   label="HOUR"
                   values={hourValues}
