@@ -12,11 +12,11 @@ const items: {id: Tab; label: string; icon: string}[] = [
   {id: 'timer', label: 'Timer', icon: 'timer-outline'},
 ];
 
-export function BottomNav({activeTab, onChange}: {activeTab: Tab; onChange: (tab: Tab) => void}) {
+export function BottomNav({activeTab, onChange, bottom}: {activeTab: Tab; onChange: (tab: Tab) => void; bottom: number}) {
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, {bottom}]}>
       <View style={styles.nav}>
         {items.map(item => {
           const active = activeTab === item.id;
@@ -25,6 +25,7 @@ export function BottomNav({activeTab, onChange}: {activeTab: Tab; onChange: (tab
               key={item.id}
               onPress={() => onChange(item.id)}
               style={[styles.item, active && styles.itemActive]}
+              android_ripple={{color: c.ripple}}
               accessibilityRole="tab"
               accessibilityState={{selected: active}}>
               <MaterialCommunityIcons name={item.icon} size={20} color={active ? c.accent : c.muted} />
@@ -38,7 +39,7 @@ export function BottomNav({activeTab, onChange}: {activeTab: Tab; onChange: (tab
 }
 
 const makeStyles = (c: Colors) => StyleSheet.create({
-  wrap: {position: 'absolute', left: 0, right: 0, bottom: 22, alignItems: 'center'},
+  wrap: {position: 'absolute', left: 0, right: 0, alignItems: 'center'},
   nav: {
     height: 64,
     padding: 6,
@@ -54,7 +55,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: {width: 0, height: 6},
   },
-  item: {minWidth: 112, height: 52, borderRadius: 19, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 15},
+  item: {minWidth: 112, height: 52, borderRadius: 19, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 15},
   itemActive: {backgroundColor: c.accentSoft},
   label: {fontSize: 14, fontWeight: '600', color: c.muted},
   labelActive: {color: c.accent},

@@ -33,7 +33,11 @@ export function TimerScreen({timer}: {timer: TimerController}) {
         {PRESETS.map(value => {
           const active = minutesInput === String(value);
           return (
-            <Pressable key={value} onPress={() => setMinutes(String(value))} style={[styles.preset, active && styles.presetActive]}>
+            <Pressable
+              key={value}
+              onPress={() => setMinutes(String(value))}
+              style={[styles.preset, active && styles.presetActive]}
+              android_ripple={{color: c.ripple}}>
               <Text style={[styles.presetText, active && styles.presetTextActive]}>{value} min</Text>
             </Pressable>
           );
@@ -63,7 +67,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   progress: {height: 8, borderRadius: 4, backgroundColor: c.accentPale, overflow: 'hidden', marginTop: 12},
   progressFill: {height: 8, borderRadius: 4, backgroundColor: c.accent},
   presets: {flexDirection: 'row', gap: 9, marginTop: 18},
-  preset: {flex: 1, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
+  preset: {flex: 1, height: 42, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
   presetActive: {backgroundColor: c.accentSoft, borderColor: c.accent},
   presetText: {fontSize: 13, color: c.muted, fontWeight: '600'},
   presetTextActive: {color: c.accent},

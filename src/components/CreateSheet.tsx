@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Button, Divider, SegmentedButtons, Switch, Text, TextInput} from 'react-native-paper';
 import {
   Alarm,
@@ -46,6 +47,7 @@ const TRAVEL = Dimensions.get('window').height;
 
 export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   const c = useColors();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const translateY = useRef(new Animated.Value(TRAVEL)).current;
@@ -119,6 +121,26 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
     [close, translateY],
   );
 
+  // The handle + header live outside the ScrollView, so dragging down there
+  // always closes the sheet — regardless of how far the body is scrolled.
+  const headerPan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 6 && gesture.dy > Math.abs(gesture.dx) * 1.2,
+        onPanResponderMove: (_, gesture) => {
+          if (gesture.dy > 0) translateY.setValue(gesture.dy);
+        },
+        onPanResponderRelease: (_, gesture) =>
+          gesture.dy > 120 || gesture.vy > 1
+            ? close()
+            : Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start(),
+        onPanResponderTerminate: () => Animated.spring(translateY, {toValue: 0, useNativeDriver: true}).start(),
+        onPanResponderTerminationRequest: () => false,
+      }),
+    [close, translateY],
+  );
+
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffset.current = event.nativeEvent.contentOffset.y;
   };
@@ -174,25 +196,27 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
           <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close new alarm" />
         </Animated.View>
         <Animated.View {...panResponder.panHandlers} style={[styles.sheet, {transform: [{translateY}]}]}>
-          <View style={styles.dragArea}>
-            <View style={styles.handle} />
+          <View {...headerPan.panHandlers}>
+            <View style={styles.dragArea}>
+              <View style={styles.handle} />
+            </View>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.title}>{initial ? 'Edit alarm' : alarmKind === 'sequence' ? 'Wake-up group' : 'New alarm'}</Text>
+                <Text style={styles.subtitle}>Set a time that feels right</Text>
+              </View>
+              <Pressable style={styles.closeBtn} onPress={close} android_ripple={{color: c.ripple}} accessibilityLabel="Close">
+                <MaterialCommunityIcons name="close" size={24} color={c.ink} />
+              </Pressable>
+            </View>
           </View>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.body}>
             <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={styles.scroll}
+              contentContainerStyle={[styles.scroll, {paddingBottom: 28 + insets.bottom}]}
               scrollEventThrottle={16}
               onScroll={onScroll}>
-              <View style={styles.header}>
-                <View>
-                  <Text style={styles.title}>{initial ? 'Edit alarm' : alarmKind === 'sequence' ? 'Wake-up group' : 'New alarm'}</Text>
-                  <Text style={styles.subtitle}>Set a time that feels right</Text>
-                </View>
-                <Pressable style={styles.closeBtn} onPress={close} accessibilityLabel="Close">
-                  <MaterialCommunityIcons name="close" size={24} color={c.ink} />
-                </Pressable>
-              </View>
               <SegmentedButtons
                 value={alarmKind}
                 onValueChange={value => setAlarmKind(value as AlarmKind)}
@@ -240,7 +264,11 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 {dayLabels.map((label, index) => {
                   const active = days.includes(index + 1);
                   return (
-                    <Pressable key={`${label}-${index}`} onPress={() => toggleDay(index + 1)} style={[styles.day, active && styles.dayActive]}>
+                    <Pressable
+                      key={`${label}-${index}`}
+                      onPress={() => toggleDay(index + 1)}
+                      style={[styles.day, active && styles.dayActive]}
+                      android_ripple={{color: c.ripple}}>
                       <Text style={[styles.dayText, active && styles.dayTextActive]}>{label}</Text>
                     </Pressable>
                   );
@@ -254,7 +282,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 </View>
               ) : null}
               <Text style={[styles.fieldLabel, styles.ringtoneLabel]}>RINGTONE</Text>
-              <Pressable style={styles.ringtoneHeader} onPress={() => setRingtoneOpen(value => !value)}>
+              <Pressable style={styles.ringtoneHeader} onPress={() => setRingtoneOpen(value => !value)} android_ripple={{color: c.ripple}}>
                 <View style={styles.ringtoneHeaderCopy}>
                   <MaterialCommunityIcons name="bell-outline" size={20} color={c.accent} />
                   <Text style={styles.ringtoneHeaderText}>{ringtoneLabel(ringtone)}</Text>
@@ -268,7 +296,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                     const playing = previewingId === option.id;
                     return (
                       <View key={option.id} style={[styles.ringtoneRow, active && styles.ringtoneActive]}>
-                        <Pressable style={styles.ringtoneChoice} onPress={() => setRingtone(option.id)}>
+                        <Pressable style={styles.ringtoneChoice} onPress={() => setRingtone(option.id)} android_ripple={{color: c.ripple}}>
                           <MaterialCommunityIcons name={option.icon} size={20} color={active ? c.accent : c.muted} />
                           <Text style={[styles.ringtoneText, active && styles.ringtoneTextActive]}>{option.label}</Text>
                         </Pressable>
@@ -297,7 +325,11 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                     {lightProgramOptions.map(option => {
                       const active = lightProgram === option.id;
                       return (
-                        <Pressable key={option.id} onPress={() => setLightProgram(option.id)} style={[styles.program, active && styles.programActive]}>
+                        <Pressable
+                          key={option.id}
+                          onPress={() => setLightProgram(option.id)}
+                          style={[styles.program, active && styles.programActive]}
+                          android_ripple={{color: c.ripple}}>
                           <MaterialCommunityIcons name={option.icon} size={20} color={active ? c.accent : c.muted} />
                           <Text style={[styles.programLabel, active && styles.programLabelActive]}>{option.label}</Text>
                         </Pressable>
@@ -353,13 +385,16 @@ const makeStyles = (c: Colors) =>
     root: {flex: 1, justifyContent: 'flex-end'},
     backdrop: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.overlay},
     sheet: {maxHeight: '94%', backgroundColor: c.canvas, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 22},
-    scroll: {paddingBottom: 28},
+    // flexShrink lets the scroll area shrink to the sheet's maxHeight instead
+    // of overflowing the screen (which cut off the save button on tall forms).
+    body: {flexShrink: 1},
+    scroll: {},
     dragArea: {height: 40, alignItems: 'center', justifyContent: 'center'},
     handle: {width: 42, height: 5, borderRadius: 3, backgroundColor: c.line},
     header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20},
     title: {fontSize: 26, fontWeight: '700', letterSpacing: -0.6, color: c.ink},
     subtitle: {fontSize: 14, color: c.muted, marginTop: 4},
-    closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
+    closeBtn: {width: 44, height: 44, borderRadius: 15, overflow: 'hidden', backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
     segmented: {marginBottom: 24},
     fieldLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginBottom: 10},
     fieldLabelInline: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted},
@@ -370,7 +405,7 @@ const makeStyles = (c: Colors) =>
     allBtn: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.accentSoft},
     allBtnText: {fontSize: 12, fontWeight: '700', color: c.accent},
     daysRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22},
-    day: {width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
+    day: {width: 38, height: 38, borderRadius: 19, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
     dayActive: {backgroundColor: c.accent, borderColor: c.accent},
     dayText: {fontSize: 13, fontWeight: '700', color: c.muted},
     dayTextActive: {color: c.onAccent},
@@ -378,7 +413,7 @@ const makeStyles = (c: Colors) =>
     groupInput: {flex: 1, minWidth: 130, backgroundColor: c.surface},
     groupHint: {width: '100%', fontSize: 13, color: c.muted},
     ringtoneLabel: {marginTop: 2},
-    ringtoneHeader: {minHeight: 56, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10},
+    ringtoneHeader: {minHeight: 56, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10},
     ringtoneHeaderCopy: {flexDirection: 'row', alignItems: 'center', gap: 10},
     ringtoneHeaderText: {fontSize: 15, color: c.ink, fontWeight: '600'},
     ringtoneMenu: {gap: 7, marginBottom: 20},
@@ -393,7 +428,7 @@ const makeStyles = (c: Colors) =>
     hueSub: {fontSize: 12, color: c.muted, marginTop: 2},
     lightBody: {marginBottom: 20},
     programRow: {flexDirection: 'row', gap: 8, marginBottom: 16},
-    program: {flex: 1, height: 62, borderRadius: 15, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', gap: 4},
+    program: {flex: 1, height: 62, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', gap: 4},
     programActive: {borderColor: c.accent, backgroundColor: c.accentSoft},
     programLabel: {fontSize: 12, fontWeight: '600', color: c.muted},
     programLabelActive: {color: c.accent},

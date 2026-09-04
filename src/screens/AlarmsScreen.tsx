@@ -44,7 +44,7 @@ export function AlarmsScreen({alarms, onCreate, onEdit, onToggle, onDelete, onOp
             {active.length ? `${active.length} active alarm${active.length === 1 ? '' : 's'}` : 'Nothing active right now'}
           </Text>
         </View>
-        <Pressable style={styles.iconBtn} onPress={onOpenSettings} accessibilityLabel="Open settings">
+        <Pressable style={styles.iconBtn} onPress={onOpenSettings} android_ripple={{color: c.ripple}} accessibilityLabel="Open settings">
           <MaterialCommunityIcons name="cog-outline" size={24} color={c.ink} />
         </Pressable>
       </View>
@@ -72,7 +72,7 @@ export function AlarmsScreen({alarms, onCreate, onEdit, onToggle, onDelete, onOp
                   key={alarm.id}
                   alarm={alarm}
                   expanded={expanded.has(alarm.id)}
-                  onPress={() => alarm.kind === 'sequence' && toggleExpand(alarm.id)}
+                  onPress={() => (alarm.kind === 'sequence' ? toggleExpand(alarm.id) : onEdit(alarm))}
                   onToggle={() => onToggle(alarm)}
                   onDelete={() => onDelete(alarm)}
                   onEdit={() => onEdit(alarm)}
@@ -92,7 +92,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   eyebrow: {fontSize: 11, letterSpacing: 2, fontWeight: '700', color: c.accent, marginBottom: 8},
   title: {fontSize: 38, lineHeight: 44, letterSpacing: -1.5, fontWeight: '700', color: c.ink},
   subtitle: {fontSize: 15, color: c.muted, marginTop: 5},
-  iconBtn: {width: 48, height: 48, borderRadius: 16, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
+  iconBtn: {width: 48, height: 48, borderRadius: 16, overflow: 'hidden', backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
   empty: {alignItems: 'center', paddingTop: 34, paddingHorizontal: 22},
   emptyIcon: {width: 64, height: 64, borderRadius: 22, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 18},
   emptyIconText: {fontSize: 28, color: c.onAccent},

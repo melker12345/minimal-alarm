@@ -1,9 +1,9 @@
 import React, {useMemo, useState} from 'react';
-import {StatusBar, StyleSheet, View} from 'react-native';
+import {Alert, StatusBar, StyleSheet, View} from 'react-native';
 import {FAB, Portal} from 'react-native-paper';
-import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaProvider, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {Alarm, AlarmDraft, AlarmKind} from './src/domain/alarm';
+import {Alarm, AlarmDraft, AlarmKind, timeText} from './src/domain/alarm';
 import {Colors} from './src/design/theme';
 import {ThemeProvider, useColors, useScheme} from './src/design/ThemeProvider';
 import {useAlarms} from './src/state/useAlarms';
@@ -19,6 +19,9 @@ import {HueScreen} from './src/screens/HueScreen';
 function AlarmApp() {
   const c = useColors();
   const scheme = useScheme();
+  const insets = useSafeAreaInsets();
+  // Keep the nav pill (and the FAB above it) clear of the system bar.
+  const navBottom = Math.max(22, insets.bottom + 10);
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const {alarms, save, toggle, remove} = useAlarms();
@@ -51,6 +54,12 @@ function AlarmApp() {
     permissions.refresh();
     setSettingsOpen(true);
   };
+  const confirmDelete = (alarm: Alarm) => {
+    Alert.alert('Delete alarm?', `The ${timeText(alarm)} alarm will be removed.`, [
+      {text: 'Cancel', style: 'cancel'},
+      {text: 'Delete', style: 'destructive', onPress: () => remove(alarm)},
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -62,16 +71,23 @@ function AlarmApp() {
             onCreate={() => openCreate()}
             onEdit={openEdit}
             onToggle={toggle}
-            onDelete={remove}
+            onDelete={confirmDelete}
             onOpenSettings={openSettings}
           />
         ) : (
           <TimerScreen timer={timer} />
         )}
         {activeTab === 'alarms' ? (
-          <FAB icon="plus" label="New alarm" onPress={() => openCreate()} style={styles.fab} color={c.onAccent} customSize={56} />
+          <FAB
+            icon="plus"
+            label="New alarm"
+            onPress={() => openCreate()}
+            style={[styles.fab, {bottom: navBottom + 78}]}
+            color={c.onAccent}
+            customSize={56}
+          />
         ) : null}
-        <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+        <BottomNav activeTab={activeTab} onChange={setActiveTab} bottom={navBottom} />
       </View>
       <Portal>
         {sheetKind ? <CreateSheet kind={sheetKind} initial={editing} onDismiss={closeSheet} onSave={handleSave} /> : null}
@@ -111,5 +127,5 @@ const makeStyles = (c: Colors) =>
     safe: {flex: 1, backgroundColor: c.canvas},
     page: {flex: 1, backgroundColor: c.canvas},
     // Sits above the bottom nav pill so it's never covered.
-    fab: {position: 'absolute', right: 22, bottom: 100, backgroundColor: c.accent, borderRadius: 18},
+    fab: {position: 'absolute', right: 22, backgroundColor: c.accent, borderRadius: 18},
   });

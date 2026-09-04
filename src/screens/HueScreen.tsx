@@ -21,7 +21,7 @@ export function HueScreen({onClose}: {onClose: () => void}) {
     <NativeModal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <Pressable style={styles.iconBtn} onPress={onClose} accessibilityLabel="Back">
+          <Pressable style={styles.iconBtn} onPress={onClose} android_ripple={{color: c.ripple}} accessibilityLabel="Back">
             <MaterialCommunityIcons name="chevron-left" size={26} color={c.ink} />
           </Pressable>
           <Text style={styles.title}>Philips Hue</Text>
@@ -97,7 +97,7 @@ export function HueScreen({onClose}: {onClose: () => void}) {
                     {hue.bridges.map((bridge, index) => (
                       <View key={bridge.id}>
                         {index > 0 ? <Divider /> : null}
-                        <Pressable style={styles.bridgeRow} onPress={() => hue.connect(bridge.ip)} disabled={pairing}>
+                        <Pressable style={styles.bridgeRow} onPress={() => hue.connect(bridge.ip)} android_ripple={{color: c.ripple}} disabled={pairing}>
                           <View style={styles.lightCopy}>
                             <Text style={styles.lightName}>Hue bridge</Text>
                             <Text style={styles.lightMeta}>{bridge.ip}</Text>
@@ -146,7 +146,7 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     safe: {flex: 1, backgroundColor: c.canvas},
     header: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10},
-    iconBtn: {width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center'},
+    iconBtn: {width: 44, height: 44, borderRadius: 15, overflow: 'hidden', alignItems: 'center', justifyContent: 'center'},
     title: {fontSize: 18, fontWeight: '700', color: c.ink},
     scroll: {paddingHorizontal: 22, paddingBottom: 40},
     hero: {alignItems: 'center', paddingTop: 8, paddingBottom: 22},

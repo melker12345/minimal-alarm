@@ -28,21 +28,32 @@ export function AlarmCard({alarm, expanded, onPress, onToggle, onDelete, onEdit}
       ? expanded
         ? 'TAP TO COLLAPSE  ·  HOLD TO EDIT'
         : 'TAP TO VIEW  ·  HOLD TO EDIT'
-      : 'HOLD TO EDIT';
+      : null;
 
   return (
     <View>
-      <Pressable onPress={onPress} onLongPress={onEdit} delayLongPress={420} accessibilityLabel={`Edit ${timeText(alarm)} alarm`}>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onEdit}
+        delayLongPress={420}
+        style={styles.press}
+        android_ripple={{color: c.ripple}}
+        accessibilityLabel={`Edit ${timeText(alarm)} alarm`}>
         <Surface style={[styles.card, off && styles.cardOff]} elevation={0}>
           <View style={styles.info}>
             <Text style={[styles.time, off && styles.textOff]}>{timeText(alarm)}</Text>
             <Text style={[styles.label, off && styles.textOff]}>{alarm.label}</Text>
             <Text style={styles.meta}>{meta}</Text>
-            <Text style={styles.hint}>{hint}</Text>
+            {hint ? <Text style={styles.hint}>{hint}</Text> : null}
           </View>
           <View style={styles.controls}>
             <Switch value={alarm.enabled} onValueChange={onToggle} color={c.accent} />
-            <Pressable style={styles.deleteBtn} onPress={onDelete} hitSlop={8} accessibilityLabel="Delete alarm">
+            <Pressable
+              style={styles.deleteBtn}
+              onPress={onDelete}
+              hitSlop={8}
+              android_ripple={{color: c.ripple, borderless: true, radius: 22}}
+              accessibilityLabel="Delete alarm">
               <MaterialCommunityIcons name="trash-can-outline" size={20} color={c.muted} />
             </Pressable>
           </View>
@@ -64,6 +75,7 @@ export function AlarmCard({alarm, expanded, onPress, onToggle, onDelete, onEdit}
 }
 
 const makeStyles = (c: Colors) => StyleSheet.create({
+  press: {borderRadius: 24, overflow: 'hidden', marginBottom: 10},
   card: {
     minHeight: 132,
     borderRadius: 24,
@@ -73,7 +85,6 @@ const makeStyles = (c: Colors) => StyleSheet.create({
     paddingLeft: 21,
     paddingRight: 16,
     paddingVertical: 18,
-    marginBottom: 10,
   },
   cardOff: {backgroundColor: c.surfaceMuted},
   info: {flex: 1},

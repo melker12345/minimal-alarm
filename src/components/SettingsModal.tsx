@@ -1,7 +1,7 @@
 import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {Button, Divider, Modal, Switch, Text} from 'react-native-paper';
+import {Button, Divider, Modal, Text} from 'react-native-paper';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 
@@ -40,7 +40,7 @@ export function SettingsModal({exactAllowed, fullScreenAllowed, overlayAllowed, 
           <Text style={styles.heading}>Settings</Text>
           <Text style={styles.subtitle}>Keep your mornings simple</Text>
         </View>
-        <Pressable style={styles.closeBtn} onPress={onDismiss} accessibilityLabel="Close settings">
+        <Pressable style={styles.closeBtn} onPress={onDismiss} android_ripple={{color: c.ripple}} accessibilityLabel="Close settings">
           <MaterialCommunityIcons name="close" size={24} color={c.ink} />
         </Pressable>
       </View>
@@ -61,7 +61,12 @@ export function SettingsModal({exactAllowed, fullScreenAllowed, overlayAllowed, 
         c={c}
         title="Require unlock to stop"
         subtitle="The alarm can't be dismissed from the lock screen."
-        trailing={<Switch value color={c.accent} onValueChange={() => {}} />}
+        trailing={
+          <View style={[styles.badge, {backgroundColor: c.accentSoft}]}>
+            <MaterialCommunityIcons name="check" size={14} color={c.accent} />
+            <Text style={[styles.badgeText, {color: c.accent}]}>Always on</Text>
+          </View>
+        }
       />
       {!overlayAllowed ? (
         <>
@@ -109,7 +114,7 @@ export function SettingsModal({exactAllowed, fullScreenAllowed, overlayAllowed, 
         </>
       ) : null}
       <Divider />
-      <Pressable onPress={onOpenHue}>
+      <Pressable onPress={onOpenHue} android_ripple={{color: c.ripple}}>
         <Row
           c={c}
           title="Philips Hue"
@@ -134,7 +139,9 @@ const makeStyles = (c: Colors) =>
     header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16},
     heading: {fontSize: 26, fontWeight: '700', letterSpacing: -0.6, color: c.ink},
     subtitle: {fontSize: 14, color: c.muted, marginTop: 4},
-    closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
+    closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', overflow: 'hidden'},
+    badge: {flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 11},
+    badgeText: {fontSize: 12, fontWeight: '700'},
     status: {flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, marginBottom: 4},
     statusOk: {backgroundColor: c.accentSoft},
     statusWarn: {backgroundColor: c.coralSoft},

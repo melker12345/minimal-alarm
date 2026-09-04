@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {HueBridge, HueCreds, HueLight, LinkButtonNotPressed, discoverBridges, fetchLights, pair, setLight} from '../native/hue';
 import {hueCredentials} from '../native/alarmScheduler';
 
@@ -91,26 +91,35 @@ export function useHue() {
     [refreshLights],
   );
 
+  // Bumped per light on every toggle so a slow request can't revert a newer one.
+  const toggleSeq = useRef(new Map<string, number>());
+
   const toggleLight = useCallback(
     async (light: HueLight) => {
       if (!creds) return;
       const next = !light.on;
+      const seq = (toggleSeq.current.get(light.id) ?? 0) + 1;
+      toggleSeq.current.set(light.id, seq);
       setLights(previous => previous.map(item => (item.id === light.id ? {...item, on: next} : item)));
       try {
         await setLight(creds, light.id, next);
       } catch {
-        setLights(previous => previous.map(item => (item.id === light.id ? {...item, on: light.on} : item)));
+        // Only roll back if this is still the latest toggle for the light.
+        if (toggleSeq.current.get(light.id) === seq) {
+          setLights(previous => previous.map(item => (item.id === light.id ? {...item, on: light.on} : item)));
+        }
       }
     },
     [creds],
   );
 
-  /** Flash every light on then off, so you can confirm the connection. */
+  /** Flash every light on, then restore each to how it was before the test. */
   const testLights = useCallback(async () => {
     if (!creds || !lights.length) return;
+    const before = lights.map(light => ({id: light.id, on: light.on}));
     await Promise.all(lights.map(light => setLight(creds, light.id, true).catch(() => {})));
     await delay(1200);
-    await Promise.all(lights.map(light => setLight(creds, light.id, false).catch(() => {})));
+    await Promise.all(before.map(light => setLight(creds, light.id, light.on).catch(() => {})));
     await refreshLights(creds);
   }, [creds, lights, refreshLights]);
 

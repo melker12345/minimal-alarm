@@ -11,6 +11,8 @@ export type Colors = {
   onAccent: string;
   accentSoft: string;
   accentPale: string;
+  accentLine: string; // hairline on accent-tinted surfaces
+  ripple: string; // android press feedback
   coral: string;
   coralSoft: string;
   disabled: string;
@@ -28,6 +30,8 @@ export const lightColors: Colors = {
   onAccent: '#FFFFFF',
   accentSoft: '#E7EEFF',
   accentPale: '#F2F5FF',
+  accentLine: '#C9D4ED',
+  ripple: 'rgba(21, 25, 34, 0.08)',
   coral: '#C75A43',
   coralSoft: '#F8E5DF',
   disabled: '#A9B0AA',
@@ -45,6 +49,8 @@ export const darkColors: Colors = {
   onAccent: '#0B1220',
   accentSoft: '#1B2740',
   accentPale: '#151C2C',
+  accentLine: '#2E3E63',
+  ripple: 'rgba(242, 244, 248, 0.08)',
   coral: '#E58469',
   coralSoft: '#37241E',
   disabled: '#5B6472',

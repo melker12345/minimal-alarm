@@ -42,7 +42,7 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   eyebrow: {fontSize: 11, fontWeight: '700', letterSpacing: 2, color: c.accent, marginBottom: 12},
   row: {flexDirection: 'row', alignItems: 'center'},
   time: {fontSize: 44, fontWeight: '300', letterSpacing: -2, color: c.ink},
-  details: {marginLeft: 18, paddingLeft: 18, borderLeftWidth: 1, borderLeftColor: '#C9D4ED'},
+  details: {marginLeft: 18, paddingLeft: 18, borderLeftWidth: 1, borderLeftColor: c.accentLine},
   label: {fontSize: 16, fontWeight: '600', color: c.ink},
   meta: {fontSize: 14, color: c.muted, marginTop: 3},
 });

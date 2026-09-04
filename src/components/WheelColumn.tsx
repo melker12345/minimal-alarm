@@ -165,7 +165,6 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
           snapToInterval={ITEM_HEIGHT}
           snapToAlignment="start"
           decelerationRate="fast"
-          disableIntervalMomentum
           scrollEventThrottle={16}
           onScroll={onScroll}
           onMomentumScrollEnd={settle}
