@@ -1,5 +1,6 @@
 import React, {useMemo, useState} from 'react';
 import {Alert, StatusBar, StyleSheet, View} from 'react-native';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {FAB, Portal} from 'react-native-paper';
 import {SafeAreaProvider, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -118,13 +119,17 @@ function AlarmApp() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AlarmApp />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={rootStyle}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AlarmApp />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const rootStyle = {flex: 1};
 
 const makeStyles = (c: Colors) =>
   StyleSheet.create({

@@ -6,13 +6,13 @@ import {
   Modal as NativeModal,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  PanResponder,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
+import {Gesture, GestureDetector, GestureHandlerRootView} from 'react-native-gesture-handler';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Button, Divider, SegmentedButtons, Switch, Text, TextInput} from 'react-native-paper';
@@ -112,7 +112,9 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
     setPreviewingId(null);
   }, []);
 
+  const closing = useRef(false);
   const close = useCallback(() => {
+    closing.current = true;
     stopPreview();
     Animated.parallel([
       Animated.timing(translateY, {toValue: TRAVEL, duration: 220, useNativeDriver: true}),
@@ -122,52 +124,51 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
 
   useEffect(() => () => stopPreview(), [stopPreview]);
 
-  // Swipe-to-close: valid from anywhere in the sheet while scrolled to the top.
-  const panResponder = useMemo(
+  // --- Swipe-down-to-close -------------------------------------------------
+  // gesture-handler coordinates with the ScrollView at the native level; a JS
+  // PanResponder loses that race on Android (the ScrollView intercepts first,
+  // showing the overscroll stretch instead of dragging the sheet).
+  const startPoint = useRef({x: 0, y: 0});
+  const dragBase = useRef(0);
+  const scrollGesture = useMemo(() => Gesture.Native(), []);
+  const panGesture = useMemo(
     () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        // Capture phase: without this the ScrollView keeps the drag on Android
-        // and pulling down at the top does nothing. Wheel drags are exempt.
-        onMoveShouldSetPanResponderCapture: (_, gesture) => {
-          if (scrollOffset.current > 0) return false;
-          if (gesture.dy <= 8 || gesture.dy <= Math.abs(gesture.dx) * 1.6) return false;
+      Gesture.Pan()
+        .manualActivation(true)
+        .simultaneousWithExternalGesture(scrollGesture)
+        .onTouchesDown(event => {
+          const touch = event.allTouches[0];
+          startPoint.current = {x: touch.absoluteX, y: touch.absoluteY};
+        })
+        .onTouchesMove((event, state) => {
+          const touch = event.allTouches[0];
+          const dx = touch.absoluteX - startPoint.current.x;
+          const dy = touch.absoluteY - startPoint.current.y;
           const band = wheelBand.current;
-          return !(band && gesture.y0 >= band.top && gesture.y0 <= band.bottom);
-        },
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          scrollOffset.current <= 0 && gesture.dy > 8 && gesture.dy > Math.abs(gesture.dx) * 1.6,
-        onPanResponderMove: (_, gesture) => {
-          if (gesture.dy > 0) translateY.setValue(gesture.dy);
-        },
-        onPanResponderRelease: (_, gesture) =>
-          gesture.dy > 120 || gesture.vy > 1
-            ? close()
-            : Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start(),
-        onPanResponderTerminate: () => Animated.spring(translateY, {toValue: 0, useNativeDriver: true}).start(),
-        onPanResponderTerminationRequest: () => false,
-      }),
-    [close, translateY],
-  );
-
-  // The handle + header live outside the ScrollView, so dragging down there
-  // always closes the sheet — regardless of how far the body is scrolled.
-  const headerPan = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 6 && gesture.dy > Math.abs(gesture.dx) * 1.2,
-        onPanResponderMove: (_, gesture) => {
-          if (gesture.dy > 0) translateY.setValue(gesture.dy);
-        },
-        onPanResponderRelease: (_, gesture) =>
-          gesture.dy > 120 || gesture.vy > 1
-            ? close()
-            : Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start(),
-        onPanResponderTerminate: () => Animated.spring(translateY, {toValue: 0, useNativeDriver: true}).start(),
-        onPanResponderTerminationRequest: () => false,
-      }),
-    [close, translateY],
+          const onWheel = band != null && startPoint.current.y >= band.top && startPoint.current.y <= band.bottom;
+          const scrolledDown = scrollOffset.current > 0;
+          const horizontal = Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
+          if (onWheel || scrolledDown || dy < -8 || horizontal) {
+            state.fail(); // wheel spin, body scroll, or a slider drag — not ours
+            return;
+          }
+          if (dy > 12 && dy > Math.abs(dx) * 1.6) state.activate();
+        })
+        .onStart(event => {
+          dragBase.current = event.translationY;
+        })
+        .onUpdate(event => {
+          translateY.setValue(Math.max(0, event.translationY - dragBase.current));
+        })
+        .onEnd(event => {
+          const dragged = event.translationY - dragBase.current;
+          if (dragged > 120 || event.velocityY > 1000) close();
+          else Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start();
+        })
+        .onFinalize(() => {
+          if (!closing.current) Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2}).start();
+        }),
+    [close, scrollGesture, translateY],
   );
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -220,12 +221,13 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
 
   return (
     <NativeModal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
-      <View style={styles.root}>
+      <GestureHandlerRootView style={styles.root}>
         <Animated.View style={[styles.backdrop, {opacity: backdrop}]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close new alarm" />
         </Animated.View>
-        <Animated.View {...panResponder.panHandlers} style={[styles.sheet, {transform: [{translateY}]}]}>
-          <View {...headerPan.panHandlers}>
+        <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.sheet, {transform: [{translateY}]}]}>
+          <View>
             <View style={styles.dragArea}>
               <View style={styles.handle} />
             </View>
@@ -240,9 +242,12 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
             </View>
           </View>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.body}>
+            <GestureDetector gesture={scrollGesture}>
             <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
+              overScrollMode="never"
+              bounces={false}
               contentContainerStyle={[styles.scroll, {paddingBottom: 28 + insets.bottom}]}
               scrollEventThrottle={16}
               onScroll={onScroll}>
@@ -403,9 +408,11 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 {initial ? 'Save changes' : alarmKind === 'sequence' ? 'Create group' : 'Add alarm'}
               </Button>
             </ScrollView>
+            </GestureDetector>
           </KeyboardAvoidingView>
         </Animated.View>
-      </View>
+        </GestureDetector>
+      </GestureHandlerRootView>
     </NativeModal>
   );
 }
