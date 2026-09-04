@@ -66,6 +66,16 @@ The release APK is written to
 `android/app/build/outputs/apk/release/app-release.apk` (arm64, ~22 MB, signed
 with the debug key so it installs directly).
 
+## Releases & updates
+
+Pushing a tag like `v1.2.0` makes GitHub Actions build a signed APK and
+publish it at github.com/melker12345/minimal-alarm/releases. The app checks
+`releases/latest` on launch/foreground and shows a blocking update gate when a
+newer version exists — one tap downloads the APK and opens the installer.
+Signing uses `android/keystore.properties` + `release.keystore` (gitignored;
+CI restores them from repo secrets). **Back up the keystore** — updates only
+install over the same signature.
+
 ## Install on your phone (no ADB)
 
 Put the phone on the same Wi-Fi as this computer, then:
