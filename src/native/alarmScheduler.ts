@@ -14,6 +14,8 @@ type AlarmSchedulerModule = {
   clearHueCredentials(): Promise<void>;
   previewRingtone(profile: Alarm['ringtone']): Promise<void>;
   stopRingtonePreview(): Promise<void>;
+  scheduleTimer(triggerAt: number): Promise<void>;
+  cancelTimer(): Promise<void>;
   downloadAndInstallUpdate(url: string): Promise<void>;
   versionName?: string;
 };
@@ -45,6 +47,13 @@ export const overlayAccess = {
 export const hueCredentials = {
   save: (ip: string, username: string) => nativeScheduler?.setHueCredentials(ip, username) ?? Promise.resolve(),
   clear: () => nativeScheduler?.clearHueCredentials() ?? Promise.resolve(),
+};
+
+// The countdown timer rings through the native alarm path, so it fires even
+// when the JS runtime is dead.
+export const timerScheduler = {
+  schedule: (triggerAt: number) => nativeScheduler?.scheduleTimer(triggerAt) ?? Promise.resolve(),
+  cancel: () => nativeScheduler?.cancelTimer() ?? Promise.resolve(),
 };
 
 export const appVersion: string = nativeScheduler?.versionName ?? '0.0.0';

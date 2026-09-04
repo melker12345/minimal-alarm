@@ -127,6 +127,25 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
         promise.resolve(null)
     }
 
+    /**
+     * Arm the countdown timer as a one-shot native alarm so it rings — with the
+     * full-screen ringing UI — even if the app is backgrounded or killed.
+     */
+    @ReactMethod
+    fun scheduleTimer(triggerAt: Double, promise: Promise) {
+        runCatching {
+            val at = triggerAt.toLong()
+            val cal = Calendar.getInstance().apply { timeInMillis = at }
+            scheduleOne(
+                "$TIMER_ID:0", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE),
+                emptySet(), "default", "Timer", LightConfig.OFF, at,
+            )
+        }.onSuccess { promise.resolve(null) }.onFailure { promise.reject("TIMER_FAILED", it) }
+    }
+
+    @ReactMethod
+    fun cancelTimer(promise: Promise) = cancel(TIMER_ID, promise)
+
     @ReactMethod
     fun canScheduleExactAlarms(promise: Promise) {
         promise.resolve(Build.VERSION.SDK_INT < 31 || alarmManager.canScheduleExactAlarms())
@@ -224,6 +243,7 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
         const val PREFS = "native_alarm_schedules"
         const val HUE_PREFS = "hue_config"
         const val MAX_SEQUENCE = 12
+        const val TIMER_ID = "timer"
     }
 }
 

@@ -30,6 +30,8 @@ type Props = {
   onManual: () => void;
   onManualChange: (value: string) => void;
   onManualCommit: () => void;
+  /** Column width; the default suits two columns, narrower fits three. */
+  width?: number;
 };
 
 /**
@@ -39,7 +41,7 @@ type Props = {
  * user drifts far, so there is never a visible jump. Tap the centered value to
  * type it directly.
  */
-export function WheelColumn({label, values, selected, onChange, manualActive, manualValue, onManual, onManualChange, onManualCommit}: Props) {
+export function WheelColumn({label, values, selected, onChange, manualActive, manualValue, onManual, onManualChange, onManualCommit, width = 104}: Props) {
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   // Animated.FlatList forwards FlatList methods (scrollToOffset) but its ref
@@ -150,7 +152,7 @@ export function WheelColumn({label, values, selected, onChange, manualActive, ma
   return (
     <View style={styles.column}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.window}>
+      <View style={[styles.window, {width}]}>
         <View pointerEvents="none" style={styles.selection} />
         <Animated.FlatList
           ref={listRef}
