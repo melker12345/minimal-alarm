@@ -77,6 +77,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   useEffect(() => {
     hasHueBridge().then(setHuePaired);
   }, []);
+
   // Without a paired bridge the light options are inert — don't offer them.
   const hueActive = hueEnabled && huePaired;
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -428,6 +429,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 </View>
               ) : null}
 
+              <View style={styles.spacer} />
               <Button mode="contained" onPress={submit} style={styles.createBtn} contentStyle={styles.createBtnContent}>
                 {initial ? 'Save changes' : alarmKind === 'sequence' ? 'Create group' : 'Add alarm'}
               </Button>
@@ -445,11 +447,16 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     root: {flex: 1, justifyContent: 'flex-end'},
     backdrop: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.overlay},
-    sheet: {maxHeight: '94%', backgroundColor: c.canvas, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 22},
-    // flexShrink lets the scroll area shrink to the sheet's maxHeight instead
+    // Fixed height: expanding sections (light options, ringtone list) scroll
+    // inside instead of resizing the whole modal on every toggle.
+    sheet: {height: '92%', backgroundColor: c.canvas, borderTopLeftRadius: 30, borderTopRightRadius: 30, paddingHorizontal: 22},
+    // flexShrink lets the scroll area shrink to the sheet's height instead
     // of overflowing the screen (which cut off the save button on tall forms).
     body: {flexShrink: 1},
-    scroll: {},
+    // flexGrow + the spacer pin the save button to the sheet's bottom edge
+    // whenever the content is shorter than the sheet.
+    scroll: {flexGrow: 1},
+    spacer: {flex: 1},
     dragArea: {height: 40, alignItems: 'center', justifyContent: 'center'},
     handle: {width: 42, height: 5, borderRadius: 3, backgroundColor: c.line},
     header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14},
