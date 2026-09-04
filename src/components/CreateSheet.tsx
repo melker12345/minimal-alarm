@@ -130,13 +130,23 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   // showing the overscroll stretch instead of dragging the sheet).
   const startPoint = useRef({x: 0, y: 0});
   const dragBase = useRef(0);
+  const dragActive = useRef(false);
+  // The body scroll is frozen during an active drag so pulling back up moves
+  // only the sheet — not the content underneath it at the same time.
+  const [bodyScrollLocked, setBodyScrollLocked] = useState(false);
+  // The backdrop dims with the drag natively — no per-frame JS updates.
+  const backdropOpacity = useMemo(
+    () =>
+      Animated.multiply(
+        backdrop,
+        translateY.interpolate({inputRange: [0, 600], outputRange: [1, 0.3], extrapolate: 'clamp'}),
+      ),
+    [backdrop, translateY],
+  );
   // A released (or interrupted) drag that didn't dismiss settles home.
   const settleBack = useCallback(() => {
-    Animated.parallel([
-      Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 4, speed: 16}),
-      Animated.timing(backdrop, {toValue: 1, duration: 140, useNativeDriver: true}),
-    ]).start();
-  }, [translateY, backdrop]);
+    Animated.spring(translateY, {toValue: 0, useNativeDriver: true, bounciness: 2, speed: 18}).start();
+  }, [translateY]);
   const scrollGesture = useMemo(() => Gesture.Native(), []);
   const panGesture = useMemo(
     () =>
@@ -166,23 +176,26 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
         })
         .onStart(event => {
           dragBase.current = event.translationY;
+          dragActive.current = true;
+          setBodyScrollLocked(true);
         })
         .onUpdate(event => {
-          const offset = Math.max(0, event.translationY - dragBase.current);
-          translateY.setValue(offset);
-          backdrop.setValue(Math.max(0.3, 1 - offset / 600));
+          translateY.setValue(Math.max(0, event.translationY - dragBase.current));
         })
         .onEnd(event => {
           const dragged = event.translationY - dragBase.current;
           const flungDown = event.velocityY > 900;
           const pulledBackUp = event.velocityY < -300;
           if (!pulledBackUp && (dragged > 140 || flungDown)) close();
-          else settleBack();
         })
         .onFinalize(() => {
+          // Runs after every touch sequence; only a real drag needs settling.
+          if (!dragActive.current) return;
+          dragActive.current = false;
+          setBodyScrollLocked(false);
           if (!closing.current) settleBack();
         }),
-    [close, scrollGesture, settleBack, translateY, backdrop],
+    [close, scrollGesture, settleBack, translateY],
   );
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -236,7 +249,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   return (
     <NativeModal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent>
       <GestureHandlerRootView style={styles.root}>
-        <Animated.View style={[styles.backdrop, {opacity: backdrop}]}>
+        <Animated.View style={[styles.backdrop, {opacity: backdropOpacity}]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close new alarm" />
         </Animated.View>
         <GestureDetector gesture={panGesture}>
@@ -262,6 +275,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
               keyboardShouldPersistTaps="handled"
               overScrollMode="never"
               bounces={false}
+              scrollEnabled={!bodyScrollLocked}
               contentContainerStyle={[styles.scroll, {paddingBottom: 28 + insets.bottom}]}
               scrollEventThrottle={16}
               onScroll={onScroll}>
