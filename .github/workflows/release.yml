@@ -51,5 +51,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           cp android/app/build/outputs/apk/release/app-release.apk "minimal-alarm-$VERSION.apk"
+          # Re-pushing a tag updates the existing release instead of failing.
           gh release create "$GITHUB_REF_NAME" "minimal-alarm-$VERSION.apk" \
-            --title "Minimal Alarm $VERSION" --generate-notes
+            --title "Minimal Alarm $VERSION" --generate-notes \
+            || gh release upload "$GITHUB_REF_NAME" "minimal-alarm-$VERSION.apk" --clobber
