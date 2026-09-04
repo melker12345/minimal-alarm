@@ -1,10 +1,11 @@
 import React, {useMemo, useState} from 'react';
 import {Alert, StatusBar, StyleSheet, View} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {FAB, Portal} from 'react-native-paper';
+import {FAB, Portal, Snackbar} from 'react-native-paper';
 import {SafeAreaProvider, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {Alarm, AlarmDraft, AlarmKind, timeText} from './src/domain/alarm';
+import {Alarm, AlarmDraft, AlarmKind, timeText, untilText} from './src/domain/alarm';
+import {minutesUntilNext} from './src/domain/selectors';
 import {Colors} from './src/design/theme';
 import {ThemeProvider, useColors, useScheme} from './src/design/ThemeProvider';
 import {useAlarms} from './src/state/useAlarms';
@@ -37,6 +38,7 @@ function AlarmApp() {
   const [editing, setEditing] = useState<Alarm | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [hueOpen, setHueOpen] = useState(false);
+  const [snack, setSnack] = useState<string | null>(null);
 
   const openCreate = (kind: AlarmKind = 'alarm') => {
     setEditing(undefined);
@@ -51,12 +53,24 @@ function AlarmApp() {
     setSheetKind(null);
   };
   const handleSave = (draft: AlarmDraft) => {
-    if (save(draft, editing)) closeSheet();
-    else Alert.alert('Already set', 'An identical alarm already exists.');
+    if (save(draft, editing)) {
+      closeSheet();
+      handleSaveFeedback(draft);
+    } else {
+      Alert.alert('Already set', 'An identical alarm already exists.');
+    }
   };
   const openSettings = () => {
     permissions.refresh();
     setSettingsOpen(true);
+  };
+  const handleToggle = (alarm: Alarm) => {
+    toggle(alarm);
+    // Enabling an alarm answers the question that matters: when will it ring?
+    if (!alarm.enabled) setSnack(`Rings ${untilText(minutesUntilNext(alarm))}`);
+  };
+  const handleSaveFeedback = (draft: AlarmDraft) => {
+    setSnack(`Rings ${untilText(minutesUntilNext(draft))}`);
   };
   const confirmDelete = (alarm: Alarm) => {
     Alert.alert('Delete alarm?', `The ${timeText(alarm)} alarm will be removed.`, [
@@ -74,7 +88,7 @@ function AlarmApp() {
             alarms={alarms}
             onCreate={() => openCreate()}
             onEdit={openEdit}
-            onToggle={toggle}
+            onToggle={handleToggle}
             onDelete={confirmDelete}
             onOpenSettings={openSettings}
           />
@@ -92,6 +106,13 @@ function AlarmApp() {
           />
         ) : null}
         <BottomNav activeTab={activeTab} onChange={setActiveTab} bottom={navBottom} />
+        <Snackbar
+          visible={snack != null}
+          onDismiss={() => setSnack(null)}
+          duration={2600}
+          style={[styles.snack, {marginBottom: navBottom + 76}]}>
+          {snack}
+        </Snackbar>
       </View>
       <Portal>
         {sheetKind ? <CreateSheet kind={sheetKind} initial={editing} onDismiss={closeSheet} onSave={handleSave} /> : null}
@@ -137,4 +158,5 @@ const makeStyles = (c: Colors) =>
     page: {flex: 1, backgroundColor: c.canvas},
     // Sits above the bottom nav pill so it's never covered.
     fab: {position: 'absolute', right: 22, backgroundColor: c.accent, borderRadius: 18},
+    snack: {borderRadius: 14, marginHorizontal: 22},
   });

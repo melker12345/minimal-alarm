@@ -27,14 +27,27 @@ export const minutesUntilNext = (alarm: Pick<Alarm, 'hour' | 'minute' | 'days'>,
 export const nextAlarm = (alarms: Alarm[], now: Date = new Date()): Alarm | undefined =>
   [...activeAlarms(alarms)].sort((a, b) => minutesUntilNext(a, now) - minutesUntilNext(b, now))[0];
 
-/** Alarms bucketed by their display group, each bucket sorted by time. */
+const GROUP_ORDER = ['Morning', 'Afternoon', 'Evening', 'Night', 'Wake-up sequences'];
+
+/** Time-of-day bucket for a single alarm; sequences get their own group. */
+export const groupOf = (alarm: Pick<Alarm, 'kind' | 'hour'>): string => {
+  if (alarm.kind === 'sequence') return 'Wake-up sequences';
+  if (alarm.hour >= 4 && alarm.hour < 12) return 'Morning';
+  if (alarm.hour >= 12 && alarm.hour < 17) return 'Afternoon';
+  if (alarm.hour >= 17 && alarm.hour < 22) return 'Evening';
+  return 'Night';
+};
+
+/** Alarms bucketed by time of day, buckets in day order, each sorted by time. */
 export const groupedAlarms = (alarms: Alarm[]): [string, Alarm[]][] => {
   const grouped = new Map<string, Alarm[]>();
-  alarms.forEach(alarm => grouped.set(alarm.group, [...(grouped.get(alarm.group) ?? []), alarm]));
-  return [...grouped.entries()].map(([group, items]) => [
-    group,
-    [...items].sort((a, b) => minuteOfDay(a) - minuteOfDay(b)),
-  ]);
+  alarms.forEach(alarm => {
+    const group = groupOf(alarm);
+    grouped.set(group, [...(grouped.get(group) ?? []), alarm]);
+  });
+  return [...grouped.entries()]
+    .sort(([a], [b]) => GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b))
+    .map(([group, items]) => [group, [...items].sort((a, b) => minuteOfDay(a) - minuteOfDay(b))]);
 };
 
 export const isDuplicate = (alarms: Alarm[], candidate: Alarm) =>

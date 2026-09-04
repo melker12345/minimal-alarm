@@ -72,6 +72,17 @@ describe('groupedAlarms', () => {
     expect(morning.map(alarm => alarm.id)).toEqual(['b', 'a']);
     expect(groups.map(([name]) => name)).toContain('Wake-up sequences');
   });
+
+  test('groups by actual time of day, in day order, sequences last', () => {
+    const groups = groupedAlarms([
+      make({id: 'night', hour: 23}),
+      make({id: 'seq', kind: 'sequence', hour: 7}),
+      make({id: 'evening', hour: 19}),
+      make({id: 'morning', hour: 8}),
+      make({id: 'afternoon', hour: 14}),
+    ]);
+    expect(groups.map(([name]) => name)).toEqual(['Morning', 'Afternoon', 'Evening', 'Night', 'Wake-up sequences']);
+  });
 });
 
 describe('isDuplicate', () => {

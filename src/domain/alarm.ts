@@ -77,6 +77,17 @@ export function timeText(alarm: Pick<Alarm, 'hour' | 'minute'>) {
   return `${String(displayHour).padStart(2, '0')}:${String(alarm.minute).padStart(2, '0')}`;
 }
 
+/** "in 7 h 12 min" — how long until something rings. */
+export function untilText(minutes: number) {
+  if (minutes < 1) return 'in under a minute';
+  const days = Math.floor(minutes / (24 * 60));
+  const hours = Math.floor((minutes % (24 * 60)) / 60);
+  const mins = Math.round(minutes % 60);
+  if (days > 0) return `in ${days} d${hours > 0 ? ` ${hours} h` : ''}`;
+  if (hours > 0) return `in ${hours} h${mins > 0 ? ` ${mins} min` : ''}`;
+  return `in ${mins} min`;
+}
+
 export function daysText(days: number[]) {
   const sorted = [...days].sort();
   if (sorted.length === 0) return 'Once';

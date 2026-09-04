@@ -1,5 +1,5 @@
-import React, {useMemo, useState} from 'react';
-import {ScrollView, StyleSheet, View} from 'react-native';
+import React, {useEffect, useMemo, useState} from 'react';
+import {AppState, ScrollView, StyleSheet, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Button, Surface, Text} from 'react-native-paper';
 import {Alarm} from '../domain/alarm';
@@ -23,8 +23,20 @@ export function AlarmsScreen({alarms, onCreate, onEdit, onToggle, onDelete, onOp
   const c = useColors();
   const styles = useMemo(() => makeStyles(c), [c]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // A slow clock so "next up" and its countdown stay honest while idle.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 30_000);
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') setNow(new Date());
+    });
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, []);
   const active = useMemo(() => selectActive(alarms), [alarms]);
-  const next = useMemo(() => selectNext(alarms), [alarms]);
+  const next = useMemo(() => selectNext(alarms, now), [alarms, now]);
   const groups = useMemo(() => groupedAlarms(alarms), [alarms]);
 
   const toggleExpand = (id: string) =>
@@ -50,7 +62,7 @@ export function AlarmsScreen({alarms, onCreate, onEdit, onToggle, onDelete, onOp
         </Tappable>
       </View>
 
-      <NextUpCard alarm={next} />
+      <NextUpCard alarm={next} now={now} />
 
       {alarms.length === 0 ? (
         <View style={styles.empty}>
