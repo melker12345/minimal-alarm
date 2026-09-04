@@ -14,6 +14,15 @@ export type HueStatus =
 
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
+/** Whether a Hue bridge is paired — gates per-alarm light options. */
+export async function hasHueBridge(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(CREDS_KEY)) != null;
+  } catch {
+    return false;
+  }
+}
+
 /** Setup + control state for a Philips Hue bridge on the local network. */
 export function useHue() {
   const [creds, setCreds] = useState<HueCreds | null>(null);

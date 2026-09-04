@@ -30,6 +30,7 @@ import {
   warmthLabel,
 } from '../domain/alarm';
 import {ringtonePreview} from '../native/alarmScheduler';
+import {hasHueBridge} from '../state/useHue';
 import {Slider} from './Slider';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
@@ -71,6 +72,12 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
   const [manualValue, setManualValue] = useState('');
   const [ringtoneOpen, setRingtoneOpen] = useState(false);
   const [previewingId, setPreviewingId] = useState<Ringtone | null>(null);
+  const [huePaired, setHuePaired] = useState(false);
+  useEffect(() => {
+    hasHueBridge().then(setHuePaired);
+  }, []);
+  // Without a paired bridge the light options are inert — don't offer them.
+  const hueActive = hueEnabled && huePaired;
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hourValues = useMemo(() => Array.from({length: 24}, (_, index) => index + 1), []);
   const minuteValues = useMemo(() => Array.from({length: 60}, (_, index) => index), []);
@@ -180,7 +187,7 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
       count: alarmKind === 'sequence' ? Math.min(12, Math.max(2, Number(count) || 5)) : 1,
       spacingMinutes: alarmKind === 'sequence' ? Math.max(1, Number(spacingMinutes) || 10) : 0,
       ringtone,
-      hueEnabled,
+      hueEnabled: hueActive,
       lightProgram,
       fadeMinutes,
       startWarmth,
@@ -311,15 +318,17 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
 
               <View style={styles.hueHeader}>
                 <View style={styles.hueHeaderCopy}>
-                  <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color={hueEnabled ? c.accent : c.muted} />
+                  <MaterialCommunityIcons name="lightbulb-on-outline" size={20} color={hueActive ? c.accent : c.muted} />
                   <View>
                     <Text style={styles.hueTitle}>Wake with light</Text>
-                    <Text style={styles.hueSub}>Philips Hue — pair a bridge in Settings</Text>
+                    <Text style={styles.hueSub}>
+                      {huePaired ? 'Philips Hue — bridge connected' : 'No bridge paired — connect in Settings › Philips Hue'}
+                    </Text>
                   </View>
                 </View>
-                <Switch value={hueEnabled} onValueChange={setHueEnabled} color={c.accent} />
+                <Switch value={hueActive} onValueChange={setHueEnabled} color={c.accent} disabled={!huePaired} />
               </View>
-              {hueEnabled ? (
+              {hueActive ? (
                 <View style={styles.lightBody}>
                   <View style={styles.programRow}>
                     {lightProgramOptions.map(option => {
@@ -365,7 +374,6 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                     </View>
                   ) : null}
 
-                  <Text style={styles.hueHint}>Needs a paired bridge — set it up in Settings › Philips Hue.</Text>
                 </View>
               ) : null}
 
@@ -434,7 +442,6 @@ const makeStyles = (c: Colors) =>
     programLabelActive: {color: c.accent},
     sliders: {gap: 14},
     sliderNote: {fontSize: 12, lineHeight: 17, color: c.muted, marginTop: -6},
-    hueHint: {fontSize: 12, color: c.muted, marginTop: 12, paddingHorizontal: 2},
     createBtn: {borderRadius: 16, marginTop: 4},
     createBtnContent: {height: 54},
   });
