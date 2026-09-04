@@ -28,17 +28,32 @@ const make = (over: Partial<Alarm>): Alarm => ({
   ...over,
 });
 
+// A fixed Monday 03:00 so tests don't depend on when they run.
+const mondayNight = new Date(2026, 0, 5, 3, 0);
+
 describe('nextAlarm', () => {
-  test('returns the earliest enabled alarm by time of day', () => {
+  test('returns the alarm that rings soonest', () => {
     const early = make({id: 'a', hour: 6, minute: 30});
     const late = make({id: 'b', hour: 9, minute: 0});
-    expect(nextAlarm([late, early])?.id).toBe('a');
+    expect(nextAlarm([late, early], mondayNight)?.id).toBe('a');
+  });
+
+  test('an alarm already past today yields to one still ahead', () => {
+    const morning = make({id: 'a', hour: 6, minute: 0, days: []});
+    const tonight = make({id: 'b', hour: 23, minute: 30, days: []});
+    expect(nextAlarm([morning, tonight], new Date(2026, 0, 5, 23, 0))?.id).toBe('b');
+  });
+
+  test('honors repeat days', () => {
+    const weekendOnly = make({id: 'a', hour: 6, minute: 0, days: [6, 7]});
+    const weekday = make({id: 'b', hour: 9, minute: 0, days: [1, 2, 3, 4, 5]});
+    expect(nextAlarm([weekendOnly, weekday], mondayNight)?.id).toBe('b');
   });
 
   test('ignores disabled alarms', () => {
     const disabledEarly = make({id: 'a', hour: 5, minute: 0, enabled: false});
     const active = make({id: 'b', hour: 8, minute: 0});
-    expect(nextAlarm([disabledEarly, active])?.id).toBe('b');
+    expect(nextAlarm([disabledEarly, active], mondayNight)?.id).toBe('b');
   });
 
   test('returns undefined when nothing is active', () => {
