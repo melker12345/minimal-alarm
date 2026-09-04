@@ -14,8 +14,8 @@ import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 
 export const ITEM_HEIGHT = 48;
-/** One wheel size everywhere: center value + one neighbour each side. */
-export const WHEEL_ROWS = 3;
+/** One wheel size everywhere: center value + two neighbours each side. */
+export const WHEEL_ROWS = 5;
 export const WHEEL_HEIGHT = ITEM_HEIGHT * WHEEL_ROWS;
 const REPEAT = 15; // copies of the value range, for seamless wrap
 const BASE = Math.floor(REPEAT / 2);
