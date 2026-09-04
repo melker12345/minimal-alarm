@@ -48,17 +48,17 @@ export function useAlarms() {
     if (hydrated) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(alarms));
   }, [alarms, hydrated]);
 
+  /** Returns false (and changes nothing, schedules nothing) for a duplicate. */
   const save = useCallback(
-    (draft: AlarmDraft, editing?: Alarm) => {
+    (draft: AlarmDraft, editing?: Alarm): boolean => {
       const alarm = decorate(draft, editing);
-      setAlarms(previous => {
-        if (isDuplicate(previous, alarm)) return previous;
-        return editing ? previous.map(item => (item.id === editing.id ? alarm : item)) : [...previous, alarm];
-      });
+      if (isDuplicate(alarms, alarm)) return false;
+      setAlarms(previous => (editing ? previous.map(item => (item.id === editing.id ? alarm : item)) : [...previous, alarm]));
       if (editing) alarmScheduler.cancel(editing.id);
       if (alarm.enabled) alarmScheduler.schedule(alarm);
+      return true;
     },
-    [],
+    [alarms],
   );
 
   const toggle = useCallback((alarm: Alarm) => {

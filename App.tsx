@@ -47,8 +47,8 @@ function AlarmApp() {
     setSheetKind(null);
   };
   const handleSave = (draft: AlarmDraft) => {
-    save(draft, editing);
-    closeSheet();
+    if (save(draft, editing)) closeSheet();
+    else Alert.alert('Already set', 'An identical alarm already exists.');
   };
   const openSettings = () => {
     permissions.refresh();
