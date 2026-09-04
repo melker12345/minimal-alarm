@@ -81,13 +81,17 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
 
     @ReactMethod
     fun canUseFullScreenIntent(promise: Promise) {
-        promise.resolve(Build.VERSION.SDK_INT < 29 || reactContext.getSystemService(android.app.NotificationManager::class.java).canUseFullScreenIntent())
+        // NotificationManager.canUseFullScreenIntent() only exists since API 34;
+        // below that the manifest permission alone grants full-screen intents.
+        promise.resolve(Build.VERSION.SDK_INT < 34 || reactContext.getSystemService(android.app.NotificationManager::class.java).canUseFullScreenIntent())
     }
 
     @ReactMethod
     fun openFullScreenSettings(promise: Promise) {
-        if (Build.VERSION.SDK_INT >= 29) {
-            reactContext.startActivity(Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT", Uri.parse("package:${reactContext.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        if (Build.VERSION.SDK_INT >= 34) {
+            runCatching {
+                reactContext.startActivity(Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT", Uri.parse("package:${reactContext.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
         }
         promise.resolve(null)
     }
