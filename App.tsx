@@ -14,7 +14,9 @@ import {TimerScreen} from './src/screens/TimerScreen';
 import {BottomNav, Tab} from './src/components/BottomNav';
 import {CreateSheet} from './src/components/CreateSheet';
 import {SettingsModal} from './src/components/SettingsModal';
+import {UpdateGate} from './src/components/UpdateGate';
 import {HueScreen} from './src/screens/HueScreen';
+import {useUpdateCheck} from './src/state/useUpdateCheck';
 
 function AlarmApp() {
   const c = useColors();
@@ -27,6 +29,7 @@ function AlarmApp() {
   const {alarms, save, toggle, remove} = useAlarms();
   const permissions = usePermissions();
   const timer = useTimer();
+  const update = useUpdateCheck();
 
   const [activeTab, setActiveTab] = useState<Tab>('alarms');
   const [sheetKind, setSheetKind] = useState<AlarmKind | null>(null);
@@ -107,6 +110,7 @@ function AlarmApp() {
           />
         ) : null}
         {hueOpen ? <HueScreen onClose={() => setHueOpen(false)} /> : null}
+        {update ? <UpdateGate update={update} /> : null}
       </Portal>
     </SafeAreaView>
   );

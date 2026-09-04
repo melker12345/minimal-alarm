@@ -14,6 +14,8 @@ type AlarmSchedulerModule = {
   clearHueCredentials(): Promise<void>;
   previewRingtone(profile: Alarm['ringtone']): Promise<void>;
   stopRingtonePreview(): Promise<void>;
+  downloadAndInstallUpdate(url: string): Promise<void>;
+  versionName?: string;
 };
 
 const nativeScheduler = NativeModules.AlarmScheduler as AlarmSchedulerModule | undefined;
@@ -43,6 +45,12 @@ export const overlayAccess = {
 export const hueCredentials = {
   save: (ip: string, username: string) => nativeScheduler?.setHueCredentials(ip, username) ?? Promise.resolve(),
   clear: () => nativeScheduler?.clearHueCredentials() ?? Promise.resolve(),
+};
+
+export const appVersion: string = nativeScheduler?.versionName ?? '0.0.0';
+
+export const appUpdater = {
+  downloadAndInstall: (url: string) => nativeScheduler?.downloadAndInstallUpdate(url) ?? Promise.resolve(),
 };
 
 export const ringtonePreview = {

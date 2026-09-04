@@ -26,6 +26,44 @@ class AlarmSchedulerModule(private val reactContext: ReactApplicationContext) : 
 
     override fun getName() = "AlarmScheduler"
 
+    override fun getConstants(): Map<String, Any> = mapOf("versionName" to BuildConfig.VERSION_NAME)
+
+    /**
+     * Download an APK (release asset URL) and hand it to the system package
+     * installer when done. Used by the in-app update gate.
+     */
+    @ReactMethod
+    fun downloadAndInstallUpdate(url: String, promise: Promise) {
+        runCatching {
+            val apk = java.io.File(reactContext.getExternalFilesDir(null), "update.apk")
+            apk.delete()
+            val request = android.app.DownloadManager.Request(Uri.parse(url))
+                .setTitle("Minimal Alarm update")
+                .setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE)
+                .setDestinationInExternalFilesDir(reactContext, null, "update.apk")
+            val downloadId = reactContext.getSystemService(android.app.DownloadManager::class.java).enqueue(request)
+            val receiver = object : android.content.BroadcastReceiver() {
+                override fun onReceive(ctx: Context, intent: Intent) {
+                    if (intent.getLongExtra(android.app.DownloadManager.EXTRA_DOWNLOAD_ID, -1) != downloadId) return
+                    runCatching { ctx.unregisterReceiver(this) }
+                    val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", apk)
+                    runCatching {
+                        ctx.startActivity(
+                            Intent(Intent.ACTION_VIEW)
+                                .setDataAndType(uri, "application/vnd.android.package-archive")
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION),
+                        )
+                    }
+                }
+            }
+            androidx.core.content.ContextCompat.registerReceiver(
+                reactContext, receiver,
+                android.content.IntentFilter(android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                androidx.core.content.ContextCompat.RECEIVER_EXPORTED,
+            )
+        }.onSuccess { promise.resolve(null) }.onFailure { promise.reject("UPDATE_FAILED", it) }
+    }
+
     @ReactMethod
     fun schedule(alarm: ReadableMap, promise: Promise) {
         runCatching {
