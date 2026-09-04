@@ -32,6 +32,7 @@ import {
 import {ringtonePreview} from '../native/alarmScheduler';
 import {hasHueBridge} from '../state/useHue';
 import {Slider} from './Slider';
+import {Tappable} from './Tappable';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 import {WheelColumn, WHEEL_HEIGHT} from './WheelColumn';
@@ -212,9 +213,9 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 <Text style={styles.title}>{initial ? 'Edit alarm' : alarmKind === 'sequence' ? 'Wake-up group' : 'New alarm'}</Text>
                 <Text style={styles.subtitle}>Set a time that feels right</Text>
               </View>
-              <Pressable style={styles.closeBtn} onPress={close} android_ripple={{color: c.ripple}} accessibilityLabel="Close">
+              <Tappable frame={styles.closeBtn} style={styles.closeBtnInner} onPress={close} accessibilityLabel="Close">
                 <MaterialCommunityIcons name="close" size={24} color={c.ink} />
-              </Pressable>
+              </Tappable>
             </View>
           </View>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.body}>
@@ -271,13 +272,13 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 {dayLabels.map((label, index) => {
                   const active = days.includes(index + 1);
                   return (
-                    <Pressable
+                    <Tappable
                       key={`${label}-${index}`}
                       onPress={() => toggleDay(index + 1)}
-                      style={[styles.day, active && styles.dayActive]}
-                      android_ripple={{color: c.ripple}}>
+                      frame={[styles.day, active && styles.dayActive]}
+                      style={styles.dayInner}>
                       <Text style={[styles.dayText, active && styles.dayTextActive]}>{label}</Text>
-                    </Pressable>
+                    </Tappable>
                   );
                 })}
               </View>
@@ -289,13 +290,13 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                 </View>
               ) : null}
               <Text style={[styles.fieldLabel, styles.ringtoneLabel]}>RINGTONE</Text>
-              <Pressable style={styles.ringtoneHeader} onPress={() => setRingtoneOpen(value => !value)} android_ripple={{color: c.ripple}}>
+              <Tappable frame={styles.ringtoneHeader} style={styles.ringtoneHeaderInner} onPress={() => setRingtoneOpen(value => !value)}>
                 <View style={styles.ringtoneHeaderCopy}>
                   <MaterialCommunityIcons name="bell-outline" size={20} color={c.accent} />
                   <Text style={styles.ringtoneHeaderText}>{ringtoneLabel(ringtone)}</Text>
                 </View>
                 <MaterialCommunityIcons name={ringtoneOpen ? 'chevron-up' : 'chevron-down'} size={22} color={c.muted} />
-              </Pressable>
+              </Tappable>
               {ringtoneOpen ? (
                 <View style={styles.ringtoneMenu}>
                   {ringtoneOptions.map(option => {
@@ -334,14 +335,14 @@ export function CreateSheet({kind, initial, onDismiss, onSave}: Props) {
                     {lightProgramOptions.map(option => {
                       const active = lightProgram === option.id;
                       return (
-                        <Pressable
+                        <Tappable
                           key={option.id}
                           onPress={() => setLightProgram(option.id)}
-                          style={[styles.program, active && styles.programActive]}
-                          android_ripple={{color: c.ripple}}>
+                          frame={[styles.program, active && styles.programActive]}
+                          style={styles.programInner}>
                           <MaterialCommunityIcons name={option.icon} size={20} color={active ? c.accent : c.muted} />
                           <Text style={[styles.programLabel, active && styles.programLabelActive]}>{option.label}</Text>
-                        </Pressable>
+                        </Tappable>
                       );
                     })}
                   </View>
@@ -402,7 +403,8 @@ const makeStyles = (c: Colors) =>
     header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20},
     title: {fontSize: 26, fontWeight: '700', letterSpacing: -0.6, color: c.ink},
     subtitle: {fontSize: 14, color: c.muted, marginTop: 4},
-    closeBtn: {width: 44, height: 44, borderRadius: 15, overflow: 'hidden', backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
+    closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface},
+    closeBtnInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     segmented: {marginBottom: 24},
     fieldLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginBottom: 10},
     fieldLabelInline: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted},
@@ -413,7 +415,8 @@ const makeStyles = (c: Colors) =>
     allBtn: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 12, backgroundColor: c.accentSoft},
     allBtnText: {fontSize: 12, fontWeight: '700', color: c.accent},
     daysRow: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22},
-    day: {width: 38, height: 38, borderRadius: 19, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center'},
+    day: {width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
+    dayInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     dayActive: {backgroundColor: c.accent, borderColor: c.accent},
     dayText: {fontSize: 13, fontWeight: '700', color: c.muted},
     dayTextActive: {color: c.onAccent},
@@ -421,11 +424,13 @@ const makeStyles = (c: Colors) =>
     groupInput: {flex: 1, minWidth: 130, backgroundColor: c.surface},
     groupHint: {width: '100%', fontSize: 13, color: c.muted},
     ringtoneLabel: {marginTop: 2},
-    ringtoneHeader: {minHeight: 56, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 10},
+    ringtoneHeader: {borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, marginBottom: 10},
+    ringtoneHeaderInner: {minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16},
     ringtoneHeaderCopy: {flexDirection: 'row', alignItems: 'center', gap: 10},
     ringtoneHeaderText: {fontSize: 15, color: c.ink, fontWeight: '600'},
     ringtoneMenu: {gap: 7, marginBottom: 20},
-    ringtoneRow: {minHeight: 52, borderRadius: 15, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 14, paddingRight: 6},
+    // overflow clips the choice Pressable's ripple to the row's rounded corners.
+    ringtoneRow: {minHeight: 52, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 14, paddingRight: 6},
     ringtoneChoice: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9},
     ringtoneActive: {borderColor: c.accent, backgroundColor: c.accentSoft},
     ringtoneText: {fontSize: 14, color: c.muted},
@@ -436,7 +441,8 @@ const makeStyles = (c: Colors) =>
     hueSub: {fontSize: 12, color: c.muted, marginTop: 2},
     lightBody: {marginBottom: 20},
     programRow: {flexDirection: 'row', gap: 8, marginBottom: 16},
-    program: {flex: 1, height: 62, borderRadius: 15, overflow: 'hidden', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', gap: 4},
+    program: {flex: 1, height: 62, borderRadius: 15, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
+    programInner: {flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4},
     programActive: {borderColor: c.accent, backgroundColor: c.accentSoft},
     programLabel: {fontSize: 12, fontWeight: '600', color: c.muted},
     programLabelActive: {color: c.accent},

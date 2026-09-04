@@ -5,6 +5,7 @@ import {Button, Divider, Modal, Text} from 'react-native-paper';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
 import {appVersion} from '../native/alarmScheduler';
+import {Tappable} from './Tappable';
 
 type Props = {
   exactAllowed: boolean;
@@ -41,9 +42,9 @@ export function SettingsModal({exactAllowed, fullScreenAllowed, overlayAllowed, 
           <Text style={styles.heading}>Settings</Text>
           <Text style={styles.subtitle}>Keep your mornings simple</Text>
         </View>
-        <Pressable style={styles.closeBtn} onPress={onDismiss} android_ripple={{color: c.ripple}} accessibilityLabel="Close settings">
+        <Tappable frame={styles.closeBtn} style={styles.closeBtnInner} onPress={onDismiss} accessibilityLabel="Close settings">
           <MaterialCommunityIcons name="close" size={24} color={c.ink} />
-        </Pressable>
+        </Tappable>
       </View>
 
       <View style={[styles.status, allGranted ? styles.statusOk : styles.statusWarn]}>
@@ -141,7 +142,8 @@ const makeStyles = (c: Colors) =>
     header: {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16},
     heading: {fontSize: 26, fontWeight: '700', letterSpacing: -0.6, color: c.ink},
     subtitle: {fontSize: 14, color: c.muted, marginTop: 4},
-    closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', overflow: 'hidden'},
+    closeBtn: {width: 44, height: 44, borderRadius: 15, backgroundColor: c.surface},
+    closeBtnInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     badge: {flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 11},
     badgeText: {fontSize: 12, fontWeight: '700'},
     status: {flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, marginBottom: 4},

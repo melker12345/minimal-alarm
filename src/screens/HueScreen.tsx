@@ -5,6 +5,7 @@ import {Button, Divider, Switch, Text, TextInput} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
+import {Tappable} from '../components/Tappable';
 import {useHue} from '../state/useHue';
 
 export function HueScreen({onClose}: {onClose: () => void}) {
@@ -21,9 +22,9 @@ export function HueScreen({onClose}: {onClose: () => void}) {
     <NativeModal visible animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <Pressable style={styles.iconBtn} onPress={onClose} android_ripple={{color: c.ripple}} accessibilityLabel="Back">
+          <Tappable frame={styles.iconBtn} style={styles.iconBtnInner} onPress={onClose} accessibilityLabel="Back">
             <MaterialCommunityIcons name="chevron-left" size={26} color={c.ink} />
-          </Pressable>
+          </Tappable>
           <Text style={styles.title}>Philips Hue</Text>
           <View style={styles.iconBtn} />
         </View>
@@ -146,7 +147,8 @@ const makeStyles = (c: Colors) =>
   StyleSheet.create({
     safe: {flex: 1, backgroundColor: c.canvas},
     header: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10},
-    iconBtn: {width: 44, height: 44, borderRadius: 15, overflow: 'hidden', alignItems: 'center', justifyContent: 'center'},
+    iconBtn: {width: 44, height: 44, borderRadius: 15},
+    iconBtnInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     title: {fontSize: 18, fontWeight: '700', color: c.ink},
     scroll: {paddingHorizontal: 22, paddingBottom: 40},
     hero: {alignItems: 'center', paddingTop: 8, paddingBottom: 22},
@@ -160,7 +162,8 @@ const makeStyles = (c: Colors) =>
     actions: {flexDirection: 'row', gap: 10, marginBottom: 24},
     flexBtn: {flex: 1, borderRadius: 14},
     sectionLabel: {fontSize: 11, letterSpacing: 1.8, fontWeight: '700', color: c.muted, marginBottom: 10, marginTop: 4},
-    card: {backgroundColor: c.surface, borderRadius: 18, borderWidth: 1, borderColor: c.line, paddingHorizontal: 16, marginBottom: 18},
+    // overflow clips the bridge-row ripple to the card's rounded corners.
+    card: {backgroundColor: c.surface, borderRadius: 18, overflow: 'hidden', borderWidth: 1, borderColor: c.line, paddingHorizontal: 16, marginBottom: 18},
     lightRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16},
     lightCopy: {flex: 1, paddingRight: 12},
     lightName: {fontSize: 15, fontWeight: '600', color: c.ink},

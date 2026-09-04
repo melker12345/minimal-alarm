@@ -1,8 +1,9 @@
 import React, {useMemo} from 'react';
-import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
+import {ScrollView, StyleSheet, View} from 'react-native';
 import {Button, Surface, Text, TextInput} from 'react-native-paper';
 import {Colors, spacing} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
+import {Tappable} from '../components/Tappable';
 import {TimerController} from '../state/useTimer';
 
 const PRESETS = [5, 10, 15];
@@ -33,13 +34,13 @@ export function TimerScreen({timer}: {timer: TimerController}) {
         {PRESETS.map(value => {
           const active = minutesInput === String(value);
           return (
-            <Pressable
+            <Tappable
               key={value}
               onPress={() => setMinutes(String(value))}
-              style={[styles.preset, active && styles.presetActive]}
-              android_ripple={{color: c.ripple}}>
+              frame={[styles.preset, active && styles.presetActive]}
+              style={styles.presetInner}>
               <Text style={[styles.presetText, active && styles.presetTextActive]}>{value} min</Text>
-            </Pressable>
+            </Tappable>
           );
         })}
       </View>
@@ -67,7 +68,8 @@ const makeStyles = (c: Colors) => StyleSheet.create({
   progress: {height: 8, borderRadius: 4, backgroundColor: c.accentPale, overflow: 'hidden', marginTop: 12},
   progressFill: {height: 8, borderRadius: 4, backgroundColor: c.accent},
   presets: {flexDirection: 'row', gap: 9, marginTop: 18},
-  preset: {flex: 1, height: 42, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
+  preset: {flex: 1, height: 42, borderRadius: 14, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface},
+  presetInner: {flex: 1, alignItems: 'center', justifyContent: 'center'},
   presetActive: {backgroundColor: c.accentSoft, borderColor: c.accent},
   presetText: {fontSize: 13, color: c.muted, fontWeight: '600'},
   presetTextActive: {color: c.accent},

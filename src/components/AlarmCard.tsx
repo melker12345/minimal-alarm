@@ -1,7 +1,8 @@
 import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, View} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {Surface, Switch, Text} from 'react-native-paper';
+import {Switch, Text} from 'react-native-paper';
+import {Tappable} from './Tappable';
 import {Alarm, daysText, ringtoneLabel, sequenceTimes, shiftDays, timeText} from '../domain/alarm';
 import {Colors} from '../design/theme';
 import {useColors} from '../design/ThemeProvider';
@@ -32,33 +33,31 @@ export function AlarmCard({alarm, expanded, onPress, onToggle, onDelete, onEdit}
 
   return (
     <View>
-      <Pressable
+      <Tappable
         onPress={onPress}
         onLongPress={onEdit}
         delayLongPress={420}
-        style={styles.press}
-        android_ripple={{color: c.ripple}}
+        frame={[styles.press, off && styles.cardOff]}
+        style={styles.card}
         accessibilityLabel={`Edit ${timeText(alarm)} alarm`}>
-        <Surface style={[styles.card, off && styles.cardOff]} elevation={0}>
-          <View style={styles.info}>
-            <Text style={[styles.time, off && styles.textOff]}>{timeText(alarm)}</Text>
-            <Text style={[styles.label, off && styles.textOff]}>{alarm.label}</Text>
-            <Text style={styles.meta}>{meta}</Text>
-            {hint ? <Text style={styles.hint}>{hint}</Text> : null}
-          </View>
-          <View style={styles.controls}>
-            <Switch value={alarm.enabled} onValueChange={onToggle} color={c.accent} />
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={onDelete}
-              hitSlop={8}
-              android_ripple={{color: c.ripple, borderless: true, radius: 22}}
-              accessibilityLabel="Delete alarm">
-              <MaterialCommunityIcons name="trash-can-outline" size={20} color={c.muted} />
-            </Pressable>
-          </View>
-        </Surface>
-      </Pressable>
+        <View style={styles.info}>
+          <Text style={[styles.time, off && styles.textOff]}>{timeText(alarm)}</Text>
+          <Text style={[styles.label, off && styles.textOff]}>{alarm.label}</Text>
+          <Text style={styles.meta}>{meta}</Text>
+          {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+        </View>
+        <View style={styles.controls}>
+          <Switch value={alarm.enabled} onValueChange={onToggle} color={c.accent} />
+          <Pressable
+            style={styles.deleteBtn}
+            onPress={onDelete}
+            hitSlop={8}
+            android_ripple={{color: c.ripple, borderless: true, radius: 22}}
+            accessibilityLabel="Delete alarm">
+            <MaterialCommunityIcons name="trash-can-outline" size={20} color={c.muted} />
+          </Pressable>
+        </View>
+      </Tappable>
       {expanded && alarm.kind === 'sequence' ? (
         <View style={styles.sequence}>
           {sequenceTimes(alarm).map((time, index) => (
@@ -75,11 +74,9 @@ export function AlarmCard({alarm, expanded, onPress, onToggle, onDelete, onEdit}
 }
 
 const makeStyles = (c: Colors) => StyleSheet.create({
-  press: {borderRadius: 24, overflow: 'hidden', marginBottom: 10},
+  press: {borderRadius: 24, backgroundColor: c.surface, marginBottom: 10},
   card: {
     minHeight: 132,
-    borderRadius: 24,
-    backgroundColor: c.surface,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 21,
